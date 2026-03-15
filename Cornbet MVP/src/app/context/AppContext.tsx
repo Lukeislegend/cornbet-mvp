@@ -4,7 +4,7 @@ import {
 } from 'react';
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@supabase/info';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 

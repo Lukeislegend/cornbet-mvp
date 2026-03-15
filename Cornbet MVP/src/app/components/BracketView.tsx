@@ -5,7 +5,7 @@ import { ChevronLeft, Trophy, Zap } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { BetSlip } from './BetSlip';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@supabase/info';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const CARD_H  = 60;   // height of one matchup card (px)

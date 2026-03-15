@@ -4,7 +4,7 @@ import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { GlossButton } from './GlossButton';
 import { useApp } from '../context/AppContext';
-import { projectId } from '/utils/supabase/info';
+import { projectId } from '@supabase/info';
 
 interface GameData {
   id: string;

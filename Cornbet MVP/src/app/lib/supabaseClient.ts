@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@supabase/info';
 
 // Singleton Supabase client (anon key — for auth only on the frontend)
 export const supabase = createClient(

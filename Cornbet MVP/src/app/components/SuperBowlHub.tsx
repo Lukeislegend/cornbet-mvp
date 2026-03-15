@@ -11,7 +11,7 @@ import { FuturesBettingTab } from './FuturesBettingTab';
 import { useApp } from '../context/AppContext';
 import type { BetLeg } from '../context/AppContext';
 import { TrendingUp, ListOrdered, Layers, RefreshCw, Wifi, WifiOff, GitBranch } from 'lucide-react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@supabase/info';
 
 interface BettingLine {
   id: string;

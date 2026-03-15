@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Trophy, Wifi, WifiOff } from 'lucide-react';
-import { projectId, publicAnonKey } from '/utils/supabase/info';
+import { projectId, publicAnonKey } from '@supabase/info';
 import { BetSlip } from './BetSlip';
 import { GlossButton } from './GlossButton';
 import { useApp } from '../context/AppContext';

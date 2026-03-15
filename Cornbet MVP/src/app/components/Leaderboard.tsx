@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { MaizeBankCard } from './MaizeBankCard';
-import { projectId } from '/utils/supabase/info';
+import { projectId } from '@supabase/info';
 
 interface LeaderboardPlayer {
   userId:        string;
