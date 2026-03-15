@@ -14,8 +14,8 @@ export default defineConfig({
     alias: {
       // Alias @ to the src directory
       '@': path.resolve(__dirname, './src'),
-      // Alias @supabase for supabase config (avoids /utils/ absolute path issues on Linux)
-      '@supabase': path.resolve(__dirname, './supabase'),
+      // Exact alias for our local supabase info only (avoids hijacking @supabase/supabase-js npm package)
+      '@supabase/info': path.resolve(__dirname, './supabase/info'),
     },
   },
 
