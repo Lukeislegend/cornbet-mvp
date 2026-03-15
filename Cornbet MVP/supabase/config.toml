@@ -1,0 +1,9 @@
+# Supabase project configuration
+# See: https://supabase.com/docs/guides/functions/function-configuration
+
+# Disable gateway JWT verification so requests reach our handler.
+# Our server validates JWTs via supabase.auth.getUser() in getUserId().
+# Gateway verification was rejecting valid tokens ("Invalid JWT") after
+# Supabase's JWT key rotation (HS256 → ES256).
+[functions.make-server-55aa94ce]
+verify_jwt = false

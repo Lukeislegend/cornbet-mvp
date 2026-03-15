@@ -1,0 +1,37 @@
+name: Deploy Supabase Edge Function
+
+on:
+  workflow_dispatch:  # Run manually from Actions tab
+  push:
+    branches: [main]
+    paths:
+      - 'Cornbet MVP/server/**'
+      - 'Cornbet MVP/supabase/**'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Cornbet MVP
+
+    env:
+      SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Prepare function for deploy
+        run: |
+          mkdir -p supabase/functions/make-server-55aa94ce
+          cp server/index.tsx server/kv_store.tsx supabase/functions/make-server-55aa94ce/
+
+      - name: Link project
+        run: supabase link --project-ref hkguncfsuubqzsdguhfk
+
+      - name: Deploy function
+        run: supabase functions deploy make-server-55aa94ce --no-verify-jwt
