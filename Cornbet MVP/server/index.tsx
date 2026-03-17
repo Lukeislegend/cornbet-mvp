@@ -1213,4 +1213,21 @@ function formatGameTime(d: Date): string {
   return `${months[d.getMonth()]} ${d.getDate()} · ${ts}`;
 }
 
-Deno.serve(app.fetch);
+// Handle OPTIONS (CORS preflight) at the top — before Hono — so preflight always succeeds
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, GET, OPTIONS, PUT, DELETE",
+  "Access-Control-Max-Age": "600",
+};
+
+Deno.serve(async (req) => {
+  if (req.method === "OPTIONS") {
+    return new Response(null, { status: 204, headers: CORS_HEADERS });
+  }
+  const res = await app.fetch(req);
+  // Ensure CORS headers on all responses
+  const headers = new Headers(res.headers);
+  Object.entries(CORS_HEADERS).forEach(([k, v]) => headers.set(k, v));
+  return new Response(res.body, { status: res.status, headers });
+});
