@@ -1409,6 +1409,7 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
 
     const FUTURE_MARKETS = [
       { sportKey: "basketball_ncaab_championship_winner", market: "championship" },
+      { sportKey: "basketball_ncaab_final_four",           market: "final_four"      },
       { sportKey: "basketball_ncaab_south_region_winner",   market: "south_region"   },
       { sportKey: "basketball_ncaab_east_region_winner",    market: "east_region"    },
       { sportKey: "basketball_ncaab_midwest_region_winner", market: "midwest_region" },

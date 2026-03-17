@@ -1414,6 +1414,7 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
     // All futures markets to try — gracefully handles 404s for unavailable markets
     const FUTURE_MARKETS = [
       { sportKey: "basketball_ncaab_championship_winner", market: "championship", label: "Win Championship 🏆" },
+      { sportKey: "basketball_ncaab_final_four",           market: "final_four",     label: "Make the Final Four 🏀" },
       { sportKey: "basketball_ncaab_south_region_winner",   market: "south_region",   label: "Win South Region" },
       { sportKey: "basketball_ncaab_east_region_winner",    market: "east_region",    label: "Win East Region" },
       { sportKey: "basketball_ncaab_midwest_region_winner", market: "midwest_region", label: "Win Midwest Region" },

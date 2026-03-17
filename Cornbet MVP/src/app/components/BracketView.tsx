@@ -797,6 +797,7 @@ export function BracketView() {
   /** Map market key → readable label */
   const FUTURES_LABELS: Record<string, string> = {
     championship:   'Win Championship 🏆',
+    final_four:     'Make the Final Four 🏀',
     south_region:   'Win South Region',
     east_region:    'Win East Region',
     midwest_region: 'Win Midwest Region',
@@ -804,6 +805,7 @@ export function BracketView() {
   };
   const FUTURES_SUBLABELS: Record<string, string> = {
     championship:   'Futures · NCAA Tournament Winner',
+    final_four:     'Futures · Reach the Final Four',
     south_region:   'Futures · Regional Winner',
     east_region:    'Futures · Regional Winner',
     midwest_region: 'Futures · Regional Winner',
