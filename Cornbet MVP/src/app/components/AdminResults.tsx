@@ -73,6 +73,14 @@ export function AdminResults() {
   const [deleteMsg,     setDeleteMsg]     = useState<string | null>(null);
   const [betsExpanded,  setBetsExpanded]  = useState(false);
 
+  // Admin players management
+  interface AdminPlayer { userId: string; displayName: string; joinedAt: number; balance: number; }
+  const [adminPlayers,      setAdminPlayers]      = useState<AdminPlayer[]>([]);
+  const [playersLoading,    setPlayersLoading]    = useState(false);
+  const [deletingPlayer,    setDeletingPlayer]    = useState<string | null>(null);
+  const [playerMsg,         setPlayerMsg]         = useState<string | null>(null);
+  const [playersExpanded,   setPlayersExpanded]   = useState(false);
+
   // Load existing champion on mount
   useEffect(() => {
     if (!session?.access_token) return;
@@ -232,6 +240,49 @@ export function AdminResults() {
       }
     } finally {
       setDeletingKey(null);
+    }
+  };
+
+  // ── load all players ───────────────────────────────────────────────────────
+
+  const loadAdminPlayers = useCallback(async () => {
+    if (!session?.access_token) return;
+    setPlayersLoading(true);
+    try {
+      const res = await fetch(`${BASE}/admin/players`, {
+        headers: authHeaders(session.access_token),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminPlayers(Array.isArray(data.players) ? data.players : []);
+      }
+    } finally {
+      setPlayersLoading(false);
+    }
+  }, [session?.access_token]);
+
+  // ── remove a player from registry ─────────────────────────────────────────
+
+  const handleDeletePlayer = async (userId: string, displayName: string) => {
+    if (!session?.access_token) return;
+    setDeletingPlayer(userId);
+    setPlayerMsg(null);
+    try {
+      const res = await fetch(`${BASE}/admin/registry`, {
+        method: 'DELETE',
+        headers: authHeaders(session.access_token),
+        body: JSON.stringify({ userId }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAdminPlayers(prev => prev.filter(p => p.userId !== userId));
+        setPlayerMsg(`✓ ${data.removedName ?? displayName} removed from leaderboard`);
+        setTimeout(() => setPlayerMsg(null), 3000);
+      } else {
+        setPlayerMsg(data.error ?? 'Remove failed');
+      }
+    } finally {
+      setDeletingPlayer(null);
     }
   };
 
@@ -617,6 +668,137 @@ export function AdminResults() {
                               }}
                             >
                               {deletingKey === bet._kvKey
+                                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>
+                                    <RefreshCw size={12} style={{ color: '#EF9A9A' }} />
+                                  </motion.div>
+                                : <Trash2 size={12} style={{ color: '#EF9A9A' }} />
+                              }
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── Manage players ───────────────────────────────────────── */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {/* Collapsible header */}
+            <button
+              onClick={() => {
+                const opening = !playersExpanded;
+                setPlayersExpanded(opening);
+                if (opening && adminPlayers.length === 0) loadAdminPlayers();
+              }}
+              className="w-full flex items-center justify-between px-4 py-3"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '700' }}>
+                👥 Manage players
+              </span>
+              <div className="flex items-center gap-2">
+                {adminPlayers.length > 0 && (
+                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                    {adminPlayers.length} players
+                  </span>
+                )}
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '16px', lineHeight: 1 }}>
+                  {playersExpanded ? '▲' : '▼'}
+                </span>
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {playersExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="px-4 pb-4 pt-2">
+                    {/* Refresh + description */}
+                    <div className="flex items-center justify-between mb-3">
+                      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+                        Remove a player from the leaderboard
+                      </p>
+                      <button
+                        onClick={loadAdminPlayers}
+                        disabled={playersLoading}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg"
+                        style={{ background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,213,79,0.15)' }}
+                      >
+                        <motion.div
+                          animate={playersLoading ? { rotate: 360 } : { rotate: 0 }}
+                          transition={playersLoading ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : {}}
+                        >
+                          <RefreshCw size={11} style={{ color: '#FFB300' }} />
+                        </motion.div>
+                        <span style={{ fontSize: '10px', color: '#FFB300', fontWeight: '600' }}>Refresh</span>
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {playerMsg && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          className="mb-3 text-center text-xs"
+                          style={{ color: playerMsg.startsWith('✓') ? '#66BB6A' : '#EF9A9A' }}
+                        >
+                          {playerMsg}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+
+                    {playersLoading && adminPlayers.length === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', textAlign: 'center', paddingTop: '8px' }}>
+                        Loading players…
+                      </p>
+                    ) : adminPlayers.length === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', textAlign: 'center', paddingTop: '8px' }}>
+                        No players found
+                      </p>
+                    ) : (
+                      <div className="space-y-2" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                        {adminPlayers.map(player => (
+                          <div
+                            key={player.userId}
+                            className="flex items-center justify-between gap-2 px-3 py-2 rounded-xl"
+                            style={{
+                              background: 'rgba(255,255,255,0.03)',
+                              border: '1px solid rgba(255,255,255,0.06)',
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <p style={{
+                                fontSize: '13px', color: 'rgba(255,255,255,0.8)', fontWeight: '700',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}>
+                                {player.displayName}
+                              </p>
+                              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)' }}>
+                                ${player.balance.toFixed(0)} balance
+                                {player.joinedAt ? ` · joined ${new Date(player.joinedAt).toLocaleDateString()}` : ''}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDeletePlayer(player.userId, player.displayName)}
+                              disabled={deletingPlayer === player.userId}
+                              className="flex-shrink-0 flex items-center justify-center rounded-lg transition-all active:scale-90"
+                              style={{
+                                width: '30px', height: '30px',
+                                background: 'rgba(239,154,154,0.08)',
+                                border: '1px solid rgba(239,154,154,0.2)',
+                              }}
+                            >
+                              {deletingPlayer === player.userId
                                 ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>
                                     <RefreshCw size={12} style={{ color: '#EF9A9A' }} />
                                   </motion.div>

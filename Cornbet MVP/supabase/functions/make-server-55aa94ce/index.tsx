@@ -1597,6 +1597,67 @@ app.delete(`${PREFIX}/admin/bets`, async (c) => {
   }
 });
 
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /admin/players — list all registered players with balance (admin only)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get(`${PREFIX}/admin/players`, async (c) => {
+  try {
+    const userId = await requireAuth(c);
+    if (typeof userId !== "string") return userId;
+
+    const registry = await readRegistry();
+    const userIds  = Object.keys(registry);
+
+    const players = await Promise.all(userIds.map(async uid => {
+      const balance = await readBalance(uid);
+      return {
+        userId:      uid,
+        displayName: registry[uid]?.displayName ?? uid,
+        joinedAt:    registry[uid]?.joinedAt ?? 0,
+        balance,
+      };
+    }));
+
+    players.sort((a, b) => b.balance - a.balance);
+    return c.json({ players });
+  } catch (err) {
+    console.log("Error in GET /admin/players:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DELETE /admin/registry — remove a player from the registry (leaderboard)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.delete(`${PREFIX}/admin/registry`, async (c) => {
+  try {
+    const adminId = await requireAuth(c);
+    if (typeof adminId !== "string") return adminId;
+
+    const { userId: targetUserId } = await c.req.json();
+    if (!targetUserId || typeof targetUserId !== "string") {
+      return c.json({ error: "userId is required" }, 400);
+    }
+
+    const registry = await readRegistry();
+    if (!registry[targetUserId]) {
+      return c.json({ error: "Player not found in registry" }, 404);
+    }
+
+    const displayName = registry[targetUserId].displayName;
+    delete registry[targetUserId];
+    await kv.set(KEY_REGISTRY, registry);
+
+    console.log(`DELETE /admin/registry: removed userId=${targetUserId} (${displayName}) by admin=${adminId}`);
+    return c.json({ ok: true, removedName: displayName });
+  } catch (err) {
+    console.log("Error in DELETE /admin/registry:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
 // ── Pure helpers ──────────────────────────────────────────────────────────────
 
 /** Convert American odds string to decimal multiplier */
