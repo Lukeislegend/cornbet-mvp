@@ -67,7 +67,7 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden flex flex-col"
             style={{
               background: '#1A1600',
               maxWidth: '393px',
@@ -75,10 +75,10 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
               border: '1px solid rgba(255,213,79,0.2)',
               borderBottom: 'none',
               maxHeight: '85vh',
-              overflowY: 'auto',
             }}
           >
-            <div className="p-6">
+            {/* Scrollable content */}
+            <div className="flex-1 overflow-y-auto p-6 pb-2">
               {/* Handle */}
               <div className="flex justify-center mb-4">
                 <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,213,79,0.2)' }} />
@@ -197,7 +197,7 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
               )}
 
               {legs.length < 2 && (
-                <p className="mb-4 text-center" style={{ color: 'rgba(239,83,80,0.6)', fontSize: '12px', fontStyle: 'italic' }}>
+                <p className="mb-2 text-center" style={{ color: 'rgba(239,83,80,0.6)', fontSize: '12px', fontStyle: 'italic' }}>
                   Add at least 2 legs to place a parlay
                 </p>
               )}
@@ -209,7 +209,7 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
                     initial={{ opacity: 0, y: -6 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -6 }}
-                    className="flex items-start gap-2 mb-4 px-3 py-3 rounded-xl"
+                    className="flex items-start gap-2 mb-2 px-3 py-3 rounded-xl"
                     style={{ background: 'rgba(239,83,80,0.1)', border: '1px solid rgba(239,83,80,0.3)' }}
                   >
                     <AlertCircle size={13} style={{ color: 'rgba(239,83,80,0.8)', flexShrink: 0, marginTop: '1px' }} />
@@ -217,12 +217,16 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
                   </motion.div>
                 )}
               </AnimatePresence>
+            </div>
 
-              {/* Group Bank note */}
-              <p className="mb-5" style={{ color: 'rgba(255,213,79,0.4)', fontSize: '12px', textAlign: 'center', fontStyle: 'italic' }}>
+            {/* Sticky footer — always visible */}
+            <div
+              className="flex-shrink-0 px-6 pb-8 pt-4"
+              style={{ borderTop: '1px solid rgba(255,213,79,0.08)', background: '#1A1600' }}
+            >
+              <p className="mb-4 text-center" style={{ color: 'rgba(255,213,79,0.4)', fontSize: '12px', fontStyle: 'italic' }}>
                 All legs must win. A loss sends the wager to Group Bank 🌽
               </p>
-
               <div style={{ opacity: isDisabled ? 0.45 : 1, pointerEvents: isDisabled ? 'none' : 'auto' }}>
                 <GlossButton onClick={handlePlaceParlay}>
                   {placing ? 'Placing…' : `Place Parlay (${legs.length} legs)`}

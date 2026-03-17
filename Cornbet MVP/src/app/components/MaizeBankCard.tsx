@@ -229,7 +229,7 @@ export function MaizeBankCard({ showCoinBurst = false, coinCount = 1, compact = 
                 ))}
               </div>
               <p style={{ color: 'rgba(255,179,0,0.55)', fontSize: '11px', lineHeight: '1.5', fontStyle: 'italic' }}>
-                This bank will be converted to Bitcoin for DraftHaus 2026.
+                Final amount contributes to DraftHaus 2026.
               </p>
             </motion.div>
           </>
