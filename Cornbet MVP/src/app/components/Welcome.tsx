@@ -64,7 +64,7 @@ export function Welcome() {
                 <span style={{ fontSize: '20px' }}>🏦</span>
                 <p style={{ color: 'rgba(255, 255, 255, 0.85)', fontSize: '14px', textAlign: 'left' }}>
                   Losses go to the{' '}
-                  <span style={{ color: '#FFB300', fontWeight: '700' }}>Group Bank</span>
+                  <span style={{ color: '#FFB300', fontWeight: '700' }}>MaizeBank</span>
                 </p>
               </div>
               <div

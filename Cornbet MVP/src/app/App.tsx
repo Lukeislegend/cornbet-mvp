@@ -2,6 +2,7 @@ import { RouterProvider } from 'react-router';
 import { router } from './routes';
 import { AppProvider, useApp } from './context/AppContext';
 import { Login } from './components/Login';
+import { ResolveToast } from './components/ResolveToast';
 import { motion, AnimatePresence } from 'motion/react';
 import { useState } from 'react';
 
@@ -90,7 +91,7 @@ function LoadingScreen() {
 //  user       → show full router + DB error banner
 
 function AppShell() {
-  const { isLoading, user } = useApp();
+  const { isLoading, user, resolveToast, dismissResolveToast } = useApp();
 
   if (isLoading) {
     return <LoadingScreen />;
@@ -104,6 +105,7 @@ function AppShell() {
     <>
       <DbErrorBanner />
       <RouterProvider router={router} />
+      <ResolveToast message={resolveToast} onDismiss={dismissResolveToast} />
     </>
   );
 }

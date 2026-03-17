@@ -50,13 +50,13 @@ export function HowItWorks() {
           <InfoCard accentColor="#F9A825">
             <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '15px', lineHeight: '1.5' }}>
               🌽 Losses → the shared{' '}
-              <HighlightText color="#F9A825">Group Bank</HighlightText>
+              <HighlightText color="#F9A825">MaizeBank</HighlightText>
             </p>
           </InfoCard>
 
           <InfoCard accentColor="#66BB6A">
             <p style={{ color: 'rgba(255, 255, 255, 0.9)', fontSize: '15px', lineHeight: '1.5' }}>
-              ₿ Group Bank converts to{' '}
+              ₿ MaizeBank converts to{' '}
               <HighlightText color="#66BB6A">Bitcoin</HighlightText>{' '}
               for DraftHaus 2026
             </p>

@@ -159,6 +159,8 @@ interface AppState {
   placedBets:   PlacedBet[];
   gameResults:  GameResultsMap;
   champion:     string | null;
+  resolveToast: string | null;
+  dismissResolveToast: () => void;
   refreshGameResults: () => Promise<void>;
   refreshChampion:    () => Promise<void>;
   setPlayWallet:      (value: number) => void;
@@ -189,6 +191,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const [placedBets,     setPlacedBets]      = useState<PlacedBet[]>([]);
   const [gameResults,    setGameResults]     = useState<GameResultsMap>({});
   const [champion,       setChampion]        = useState<string | null>(null);
+  const [resolveToast,   setResolveToast]    = useState<string | null>(null);
 
   // Latest access token — updated whenever auth state changes so apiFetch
   // always uses the current token without stale closure issues.
@@ -406,6 +409,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
               setPlacedBets(freshBets.value);
             if (freshGR.status === 'fulfilled' && freshGR.value && typeof freshGR.value === 'object')
               setGameResults(freshGR.value as GameResultsMap);
+            const betWord = result.resolved === 1 ? 'bet' : 'bets';
+            setResolveToast(`${result.resolved} ${betWord} resolved — balance updated!`);
             console.log(
               `CornBet auto-resolve: ${result.resolved} bets resolved — ` +
               `balance=$${result.newBalance} bank=$${result.newBank}`
@@ -847,6 +852,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       setPlayWallet, setGroupBank,
       addBet, resolveGameResults, resetBets,
       gameResults, champion, refreshGameResults, refreshChampion,
+      resolveToast, dismissResolveToast: () => setResolveToast(null),
     }}>
       {children}
     </AppContext.Provider>

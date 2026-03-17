@@ -225,7 +225,7 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
               style={{ borderTop: '1px solid rgba(255,213,79,0.08)', background: '#1A1600' }}
             >
               <p className="mb-4 text-center" style={{ color: 'rgba(255,213,79,0.4)', fontSize: '12px', fontStyle: 'italic' }}>
-                All legs must win. A loss sends the wager to Group Bank 🌽
+                All legs must win. A loss sends the wager to MaizeBank 🌽
               </p>
               <div style={{ opacity: isDisabled ? 0.45 : 1, pointerEvents: isDisabled ? 'none' : 'auto' }}>
                 <GlossButton onClick={handlePlaceParlay}>

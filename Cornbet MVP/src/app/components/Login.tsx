@@ -512,7 +512,7 @@ export function Login() {
                     Join the group. You'll start with{' '}
                     <span style={{ color: '#FFD54F', fontWeight: '700' }}>$500</span>
                     {' '}play balance and compete against your friends for the{' '}
-                    <span style={{ color: '#FFB300', fontWeight: '700' }}>Group Bank 🌽</span>
+                    <span style={{ color: '#FFB300', fontWeight: '700' }}>MaizeBank 🌽</span>
                   </p>
                   <SignUpForm onSuccess={handleSignupSuccess} />
                   <div className="mt-5 text-center">

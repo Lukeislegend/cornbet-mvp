@@ -42,7 +42,7 @@ export function CornBank() {
                 </div>
               </Link>
               <div>
-                <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>Corn Bank 🌽</h1>
+                <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>MaizeBank 🌽</h1>
                 <p style={{ color: 'rgba(255,255,255,0.4)', fontSize: '13px' }}>DraftHaus Progress · March Madness 2026</p>
               </div>
             </div>
@@ -61,13 +61,13 @@ export function CornBank() {
               style={{ background: '#1A1600', border: '1px solid rgba(255,213,79,0.12)' }}
             >
               <p style={{ color: '#FFD54F', fontSize: '13px', fontWeight: '800', marginBottom: '10px', letterSpacing: '0.3px' }}>
-                How the Corn Bank Works
+                How the MaizeBank Works
               </p>
               <div className="space-y-3">
                 {[
-                  { emoji: '💸', text: 'Every bet you lose, your stake goes into the Corn Bank.' },
+                  { emoji: '💸', text: 'Every bet you lose, your stake goes into the MaizeBank.' },
                   { emoji: '🌽', text: 'The bank grows all season as the group racks up L\'s.' },
-                  { emoji: '₿', text: 'At the end of DraftHaus 2026, the pot converts to Bitcoin and gets distributed.' },
+                  { emoji: '₿', text: 'Final amount contributes to DraftHaus 2026.' },
                   { emoji: '🏆', text: 'The more you play, the bigger the prize pool for everyone.' },
                 ].map(({ emoji, text }) => (
                   <div key={text} className="flex items-start gap-3">

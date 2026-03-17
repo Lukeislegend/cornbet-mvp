@@ -243,7 +243,7 @@ export function Results() {
                             transition={{ delay: idx * 0.12 + 0.6 }}
                             style={{ color: 'rgba(249,168,37,0.6)', fontSize: '11px', fontStyle: 'italic' }}
                           >
-                            → Group Bank 🌽
+                            → MaizeBank 🌽
                           </motion.span>
                         )}
                       </div>
@@ -265,7 +265,7 @@ export function Results() {
                   }}
                 >
                   <p className="mb-2" style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}>
-                    {netResult >= 0 ? '🎉 You came out ahead!' : '🌽 Your loss feeds the Group Bank.'}
+                    {netResult >= 0 ? '🎉 You came out ahead!' : '🌽 Your loss feeds the MaizeBank.'}
                   </p>
                   <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '14px' }}>
                     Net: {netResult >= 0 ? '+' : ''}${netResult.toFixed(2)}
@@ -312,7 +312,7 @@ export function Results() {
               </button>
             </Link>
             <GlossButton to="/investment-house">
-              View Group Bank 🌽
+              View MaizeBank 🌽
             </GlossButton>
             <GlossButton to="/hub" variant="ghost">
               Back to Betting

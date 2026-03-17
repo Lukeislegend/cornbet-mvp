@@ -164,9 +164,9 @@ export function BetSlip({ isOpen, onClose, betType, selection, odds, game, team,
                 )}
               </AnimatePresence>
 
-              {/* Group Bank note */}
+              {/* MaizeBank note */}
               <p className="mb-5" style={{ color: 'rgba(255,213,79,0.45)', fontSize: '12px', textAlign: 'center', fontStyle: 'italic' }}>
-                If this loses, the wager goes to the Group Bank 🌽
+                If this loses, the wager goes to the MaizeBank 🌽
               </p>
 
               {/* Place Bet Button */}

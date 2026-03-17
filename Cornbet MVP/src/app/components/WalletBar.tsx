@@ -80,7 +80,7 @@ export function WalletBar() {
           </span>
         </div>
 
-        {/* Corn Bank — tappable → /corn-bank */}
+        {/* MaizeBank — tappable → /corn-bank */}
         <button
           onClick={() => navigate('/corn-bank')}
           className="flex flex-col items-end active:scale-95 transition-transform"
@@ -95,7 +95,7 @@ export function WalletBar() {
               textTransform: 'uppercase',
             }}
           >
-            Corn Bank 🌽 ‹
+            MaizeBank 🌽 ‹
           </span>
           <motion.span
             key={groupBank}

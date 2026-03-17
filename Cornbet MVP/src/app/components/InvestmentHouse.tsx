@@ -26,7 +26,7 @@ export function InvestmentHouse() {
           <div className="text-center mb-6">
             <div style={{ fontSize: '40px', marginBottom: '8px' }}>🌽</div>
             <h1 style={{ fontSize: '26px', fontWeight: '800', color: 'white' }}>
-              Group Bank
+              MaizeBank
             </h1>
             <p style={{ color: 'rgba(255,213,79,0.55)', fontSize: '13px', marginTop: '4px' }}>
               To be converted to Bitcoin for DraftHaus 2026

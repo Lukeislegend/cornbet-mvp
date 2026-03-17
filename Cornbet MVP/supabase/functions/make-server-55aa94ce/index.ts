@@ -2,7 +2,7 @@ import { Hono } from "npm:hono";
 import { cors } from "npm:hono/cors";
 import { logger } from "npm:hono/logger";
 import { createClient } from "npm:@supabase/supabase-js";
-import * as kv from "./kv_store.tsx";
+import * as kv from "./kv_store.ts";
 
 const app = new Hono();
 
@@ -1188,7 +1188,7 @@ app.post(`${PREFIX}/bets/auto-resolve`, async (c) => {
           if (!team || seenTeams.has(team)) continue;
           seenTeams.add(team);
 
-          const pts = parseSpreadPoints((leg.selection ?? leg.label ?? "") as string, team);
+          const pts = parseSpreadPoints(leg.label ?? "", team);
           if (pts === null) continue;
           if (coveredSpread(team, pts, homeTeam, homeScore, awayScore)) {
             spreadWinners.push(team);

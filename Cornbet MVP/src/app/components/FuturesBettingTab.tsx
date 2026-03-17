@@ -245,7 +245,7 @@ export function FuturesBettingTab() {
       </div>
 
       <p className="mb-5" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '12px', lineHeight: '1.5' }}>
-        Bet stays <span style={{ color: 'rgba(255,213,79,0.7)', fontWeight: '600' }}>pending</span> until the tournament ends · losses go to the Group Bank 🌽
+        Bet stays <span style={{ color: 'rgba(255,213,79,0.7)', fontWeight: '600' }}>pending</span> until the tournament ends · losses go to the MaizeBank 🌽
       </p>
 
       {/* ── Loading skeletons ──────────────────────────────────────────── */}

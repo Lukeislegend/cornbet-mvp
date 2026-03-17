@@ -149,7 +149,7 @@ export function Performance() {
                   textTransform: 'uppercase',
                 }}
               >
-                Group Bank 🌽
+                MaizeBank 🌽
               </p>
               <p
                 style={{
@@ -215,7 +215,7 @@ export function Performance() {
               fontStyle: 'italic',
             }}
           >
-            Friendly competition. Shared stakes.{'\n'}The Group Bank grows together.
+            Friendly competition. Shared stakes.{'\n'}The MaizeBank grows together.
           </p>
 
           {/* Back Button */}
