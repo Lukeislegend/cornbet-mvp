@@ -82,115 +82,119 @@ const BRACKET_DATA: BRegion[] = [
     name: 'South',
     rounds: [
       // R64 — 8 matchups (seeding: 1v16, 8v9, 5v12, 4v13, 6v11, 3v14, 7v10, 2v15)
+      // 1-seed: Florida · Friday Tampa; 2-seed: Houston · Thursday OKC
       [
-        { id: 's-r1-0', team1: makeTeam('Duke', 1),           team2: makeTeam('Norfolk St', 16),        gameTime: 'Thu Mar 20 · 12:15 PM ET', status: 'upcoming' },
-        { id: 's-r1-1', team1: makeTeam('San Diego St', 8),   team2: makeTeam('Mississippi St', 9),     gameTime: 'Thu Mar 20 · 2:45 PM ET',  status: 'upcoming' },
-        { id: 's-r1-2', team1: makeTeam('Creighton', 5),      team2: makeTeam('McNeese', 12),           gameTime: 'Thu Mar 20 · 7:10 PM ET',  status: 'upcoming' },
-        { id: 's-r1-3', team1: makeTeam('Texas Tech', 4),     team2: makeTeam('Akron', 13),             gameTime: 'Thu Mar 20 · 9:40 PM ET',  status: 'upcoming' },
-        { id: 's-r1-4', team1: makeTeam('BYU', 6),            team2: makeTeam('VCU', 11),               gameTime: 'Fri Mar 21 · 12:15 PM ET', status: 'upcoming' },
-        { id: 's-r1-5', team1: makeTeam('Wisconsin', 3),      team2: makeTeam('Wofford', 14),           gameTime: 'Fri Mar 21 · 2:45 PM ET',  status: 'upcoming' },
-        { id: 's-r1-6', team1: makeTeam('Missouri', 7),       team2: makeTeam('Drake', 10),             gameTime: 'Fri Mar 21 · 7:10 PM ET',  status: 'upcoming' },
-        { id: 's-r1-7', team1: makeTeam('Arizona', 2),        team2: makeTeam('SEMO', 15),              gameTime: 'Fri Mar 21 · 9:40 PM ET',  status: 'upcoming' },
+        { id: 's-r1-0', team1: makeTeam('Florida', 1),        team2: makeTeam('PVA&M/Lehigh', 16),     gameTime: 'Fri Mar 20 · 12:15 PM ET', status: 'upcoming' },
+        { id: 's-r1-1', team1: makeTeam('Clemson', 8),        team2: makeTeam('Iowa', 9),               gameTime: 'Fri Mar 20 · 2:45 PM ET',  status: 'upcoming' },
+        { id: 's-r1-2', team1: makeTeam('Vanderbilt', 5),     team2: makeTeam('McNeese', 12),           gameTime: 'Thu Mar 19 · 12:15 PM ET', status: 'upcoming' },
+        { id: 's-r1-3', team1: makeTeam('Nebraska', 4),       team2: makeTeam('Troy', 13),              gameTime: 'Thu Mar 19 · 2:45 PM ET',  status: 'upcoming' },
+        { id: 's-r1-4', team1: makeTeam('North Carolina', 6), team2: makeTeam('VCU', 11),               gameTime: 'Thu Mar 19 · 7:10 PM ET',  status: 'upcoming' },
+        { id: 's-r1-5', team1: makeTeam('Illinois', 3),       team2: makeTeam('Penn', 14),              gameTime: 'Thu Mar 19 · 9:40 PM ET',  status: 'upcoming' },
+        { id: 's-r1-6', team1: makeTeam("Saint Mary's", 7),   team2: makeTeam('Texas A&M', 10),         gameTime: 'Thu Mar 19 · 7:35 PM ET',  status: 'upcoming' },
+        { id: 's-r1-7', team1: makeTeam('Houston', 2),        team2: makeTeam('Idaho', 15),             gameTime: 'Thu Mar 19 · 9:55 PM ET',  status: 'upcoming' },
       ],
       // R32 — TBD
       [
-        { id: 's-r2-0', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 's-r2-1', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 's-r2-2', status: 'upcoming', gameTime: 'Sun Mar 23' },
-        { id: 's-r2-3', status: 'upcoming', gameTime: 'Sun Mar 23' },
+        { id: 's-r2-0', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 's-r2-1', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 's-r2-2', status: 'upcoming', gameTime: 'Sun Mar 22' },
+        { id: 's-r2-3', status: 'upcoming', gameTime: 'Sun Mar 22' },
       ],
       // S16 — TBD
       [
-        { id: 's-r3-0', status: 'upcoming', gameTime: 'Thu Mar 27' },
-        { id: 's-r3-1', status: 'upcoming', gameTime: 'Thu Mar 27' },
+        { id: 's-r3-0', status: 'upcoming', gameTime: 'Thu Mar 26' },
+        { id: 's-r3-1', status: 'upcoming', gameTime: 'Thu Mar 26' },
       ],
       // E8 — TBD
       [
-        { id: 's-r4-0', status: 'upcoming', gameTime: 'Sat Mar 29' },
+        { id: 's-r4-0', status: 'upcoming', gameTime: 'Sat Mar 28' },
       ],
     ],
   },
   {
     name: 'East',
     rounds: [
+      // 1-seed: Duke · Thursday Greenville; 2-seed: UConn · Friday Philadelphia
       [
-        { id: 'e-r1-0', team1: makeTeam('Auburn', 1),         team2: makeTeam('St Francis PA', 16),    gameTime: 'Thu Mar 20 · 12:40 PM ET', status: 'upcoming' },
-        { id: 'e-r1-1', team1: makeTeam('Nebraska', 8),       team2: makeTeam('Indiana', 9),            gameTime: 'Thu Mar 20 · 3:10 PM ET',  status: 'upcoming' },
-        { id: 'e-r1-2', team1: makeTeam('Gonzaga', 5),        team2: makeTeam('Liberty', 12),           gameTime: 'Thu Mar 20 · 7:35 PM ET',  status: 'upcoming' },
-        { id: 'e-r1-3', team1: makeTeam('Marquette', 4),      team2: makeTeam('High Point', 13),        gameTime: 'Thu Mar 20 · 10:05 PM ET', status: 'upcoming' },
-        { id: 'e-r1-4', team1: makeTeam('Clemson', 6),        team2: makeTeam('Dayton', 11),            gameTime: 'Fri Mar 21 · 12:40 PM ET', status: 'upcoming' },
-        { id: 'e-r1-5', team1: makeTeam('Illinois', 3),       team2: makeTeam('Morehead St', 14),       gameTime: 'Fri Mar 21 · 3:10 PM ET',  status: 'upcoming' },
-        { id: 'e-r1-6', team1: makeTeam('Kansas State', 7),   team2: makeTeam('Utah State', 10),        gameTime: 'Fri Mar 21 · 7:35 PM ET',  status: 'upcoming' },
-        { id: 'e-r1-7', team1: makeTeam('Michigan State', 2), team2: makeTeam('Bryant', 15),            gameTime: 'Fri Mar 21 · 10:05 PM ET', status: 'upcoming' },
+        { id: 'e-r1-0', team1: makeTeam('Duke', 1),           team2: makeTeam('Siena', 16),             gameTime: 'Thu Mar 19 · 12:40 PM ET', status: 'upcoming' },
+        { id: 'e-r1-1', team1: makeTeam('Ohio State', 8),     team2: makeTeam('TCU', 9),                gameTime: 'Thu Mar 19 · 3:10 PM ET',  status: 'upcoming' },
+        { id: 'e-r1-2', team1: makeTeam("St. John's", 5),     team2: makeTeam('Northern Iowa', 12),     gameTime: 'Fri Mar 20 · 12:40 PM ET', status: 'upcoming' },
+        { id: 'e-r1-3', team1: makeTeam('Kansas', 4),         team2: makeTeam('Cal Baptist', 13),       gameTime: 'Fri Mar 20 · 3:10 PM ET',  status: 'upcoming' },
+        { id: 'e-r1-4', team1: makeTeam('Louisville', 6),     team2: makeTeam('USF', 11),               gameTime: 'Thu Mar 19 · 7:35 PM ET',  status: 'upcoming' },
+        { id: 'e-r1-5', team1: makeTeam('Michigan State', 3), team2: makeTeam('North Dakota St', 14),   gameTime: 'Thu Mar 19 · 10:05 PM ET', status: 'upcoming' },
+        { id: 'e-r1-6', team1: makeTeam('UCLA', 7),           team2: makeTeam('UCF', 10),               gameTime: 'Fri Mar 20 · 7:35 PM ET',  status: 'upcoming' },
+        { id: 'e-r1-7', team1: makeTeam('UConn', 2),          team2: makeTeam('Furman', 15),            gameTime: 'Fri Mar 20 · 10:05 PM ET', status: 'upcoming' },
       ],
       [
-        { id: 'e-r2-0', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'e-r2-1', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'e-r2-2', status: 'upcoming', gameTime: 'Sun Mar 23' },
-        { id: 'e-r2-3', status: 'upcoming', gameTime: 'Sun Mar 23' },
+        { id: 'e-r2-0', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'e-r2-1', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'e-r2-2', status: 'upcoming', gameTime: 'Sun Mar 22' },
+        { id: 'e-r2-3', status: 'upcoming', gameTime: 'Sun Mar 22' },
       ],
       [
-        { id: 'e-r3-0', status: 'upcoming', gameTime: 'Fri Mar 28' },
-        { id: 'e-r3-1', status: 'upcoming', gameTime: 'Fri Mar 28' },
+        { id: 'e-r3-0', status: 'upcoming', gameTime: 'Fri Mar 27' },
+        { id: 'e-r3-1', status: 'upcoming', gameTime: 'Fri Mar 27' },
       ],
       [
-        { id: 'e-r4-0', status: 'upcoming', gameTime: 'Sun Mar 30' },
+        { id: 'e-r4-0', status: 'upcoming', gameTime: 'Sun Mar 29' },
       ],
     ],
   },
   {
     name: 'Midwest',
     rounds: [
+      // 1-seed: Michigan · Thursday Buffalo; 2-seed: Iowa State · Friday St. Louis
       [
-        { id: 'mw-r1-0', team1: makeTeam('Houston', 1),       team2: makeTeam('SIUE', 16),              gameTime: 'Thu Mar 20 · 1:00 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-1', team1: makeTeam('Purdue', 8),        team2: makeTeam('Colorado State', 9),     gameTime: 'Thu Mar 20 · 3:30 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-2', team1: makeTeam('Memphis', 5),       team2: makeTeam('Colgate', 12),           gameTime: 'Thu Mar 20 · 8:00 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-3', team1: makeTeam('Iowa State', 4),    team2: makeTeam('Vermont', 13),           gameTime: 'Thu Mar 20 · 10:30 PM ET', status: 'upcoming' },
-        { id: 'mw-r1-4', team1: makeTeam('Arkansas', 6),      team2: makeTeam('Lipscomb', 11),          gameTime: 'Fri Mar 21 · 1:00 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-5', team1: makeTeam('Alabama', 3),       team2: makeTeam('Troy', 14),              gameTime: 'Fri Mar 21 · 3:30 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-6', team1: makeTeam('Louisville', 7),    team2: makeTeam('Georgia', 10),           gameTime: 'Fri Mar 21 · 8:00 PM ET',  status: 'upcoming' },
-        { id: 'mw-r1-7', team1: makeTeam('Tennessee', 2),     team2: makeTeam('Longwood', 15),          gameTime: 'Fri Mar 21 · 10:30 PM ET', status: 'upcoming' },
+        { id: 'mw-r1-0', team1: makeTeam('Michigan', 1),      team2: makeTeam('UMBC/Howard', 16),       gameTime: 'Thu Mar 19 · 1:00 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-1', team1: makeTeam('Georgia', 8),       team2: makeTeam('Saint Louis', 9),        gameTime: 'Thu Mar 19 · 3:30 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-2', team1: makeTeam('Texas Tech', 5),    team2: makeTeam('Akron', 12),             gameTime: 'Fri Mar 20 · 1:00 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-3', team1: makeTeam('Alabama', 4),       team2: makeTeam('Hofstra', 13),           gameTime: 'Fri Mar 20 · 3:30 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-4', team1: makeTeam('Tennessee', 6),     team2: makeTeam('SMU/Miami OH', 11),      gameTime: 'Fri Mar 20 · 8:00 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-5', team1: makeTeam('Virginia', 3),      team2: makeTeam('Wright State', 14),      gameTime: 'Fri Mar 20 · 10:30 PM ET', status: 'upcoming' },
+        { id: 'mw-r1-6', team1: makeTeam('Kentucky', 7),      team2: makeTeam('Santa Clara', 10),       gameTime: 'Fri Mar 20 · 8:00 PM ET',  status: 'upcoming' },
+        { id: 'mw-r1-7', team1: makeTeam('Iowa State', 2),    team2: makeTeam('Tennessee State', 15),   gameTime: 'Fri Mar 20 · 10:30 PM ET', status: 'upcoming' },
       ],
       [
-        { id: 'mw-r2-0', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'mw-r2-1', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'mw-r2-2', status: 'upcoming', gameTime: 'Sun Mar 23' },
-        { id: 'mw-r2-3', status: 'upcoming', gameTime: 'Sun Mar 23' },
+        { id: 'mw-r2-0', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'mw-r2-1', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'mw-r2-2', status: 'upcoming', gameTime: 'Sun Mar 22' },
+        { id: 'mw-r2-3', status: 'upcoming', gameTime: 'Sun Mar 22' },
       ],
       [
-        { id: 'mw-r3-0', status: 'upcoming', gameTime: 'Thu Mar 27' },
-        { id: 'mw-r3-1', status: 'upcoming', gameTime: 'Thu Mar 27' },
+        { id: 'mw-r3-0', status: 'upcoming', gameTime: 'Thu Mar 26' },
+        { id: 'mw-r3-1', status: 'upcoming', gameTime: 'Thu Mar 26' },
       ],
       [
-        { id: 'mw-r4-0', status: 'upcoming', gameTime: 'Sat Mar 29' },
+        { id: 'mw-r4-0', status: 'upcoming', gameTime: 'Sat Mar 28' },
       ],
     ],
   },
   {
     name: 'West',
     rounds: [
+      // 1-seed: Arizona · Friday San Diego; 2-seed: Purdue · Friday St. Louis
       [
-        { id: 'w-r1-0', team1: makeTeam('Florida', 1),        team2: makeTeam('Oakland', 16),           gameTime: 'Thu Mar 20 · 1:30 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-1', team1: makeTeam('New Mexico', 8),     team2: makeTeam('Oklahoma', 9),           gameTime: 'Thu Mar 20 · 4:00 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-2', team1: makeTeam('UNC', 5),            team2: makeTeam('UC Irvine', 12),         gameTime: 'Thu Mar 20 · 8:30 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-3', team1: makeTeam('Kentucky', 4),       team2: makeTeam('Yale', 13),              gameTime: 'Thu Mar 20 · 11:00 PM ET', status: 'upcoming' },
-        { id: 'w-r1-4', team1: makeTeam('Kansas', 6),         team2: makeTeam("St Peter's", 11),        gameTime: 'Fri Mar 21 · 1:30 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-5', team1: makeTeam('Baylor', 3),         team2: makeTeam('Sam Houston', 14),       gameTime: 'Fri Mar 21 · 4:00 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-6', team1: makeTeam('UCLA', 7),           team2: makeTeam('Texas A&M', 10),         gameTime: 'Fri Mar 21 · 8:30 PM ET',  status: 'upcoming' },
-        { id: 'w-r1-7', team1: makeTeam('Florida State', 2),  team2: makeTeam('UNC Wilmington', 15),    gameTime: 'Fri Mar 21 · 11:00 PM ET', status: 'upcoming' },
+        { id: 'w-r1-0', team1: makeTeam('Arizona', 1),        team2: makeTeam('LIU', 16),               gameTime: 'Fri Mar 20 · 1:30 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-1', team1: makeTeam('Villanova', 8),      team2: makeTeam('Utah State', 9),         gameTime: 'Fri Mar 20 · 4:00 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-2', team1: makeTeam('Wisconsin', 5),      team2: makeTeam('High Point', 12),        gameTime: 'Thu Mar 19 · 1:30 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-3', team1: makeTeam('Arkansas', 4),       team2: makeTeam('Hawaii', 13),            gameTime: 'Thu Mar 19 · 4:00 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-4', team1: makeTeam('BYU', 6),            team2: makeTeam('NC St/Texas', 11),       gameTime: 'Thu Mar 19 · 8:30 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-5', team1: makeTeam('Gonzaga', 3),        team2: makeTeam('Kennesaw St', 14),       gameTime: 'Thu Mar 19 · 11:00 PM ET', status: 'upcoming' },
+        { id: 'w-r1-6', team1: makeTeam('Miami FL', 7),       team2: makeTeam('Missouri', 10),          gameTime: 'Fri Mar 20 · 8:30 PM ET',  status: 'upcoming' },
+        { id: 'w-r1-7', team1: makeTeam('Purdue', 2),         team2: makeTeam('Queens', 15),            gameTime: 'Fri Mar 20 · 11:00 PM ET', status: 'upcoming' },
       ],
       [
-        { id: 'w-r2-0', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'w-r2-1', status: 'upcoming', gameTime: 'Sat Mar 22' },
-        { id: 'w-r2-2', status: 'upcoming', gameTime: 'Sun Mar 23' },
-        { id: 'w-r2-3', status: 'upcoming', gameTime: 'Sun Mar 23' },
+        { id: 'w-r2-0', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'w-r2-1', status: 'upcoming', gameTime: 'Sat Mar 21' },
+        { id: 'w-r2-2', status: 'upcoming', gameTime: 'Sun Mar 22' },
+        { id: 'w-r2-3', status: 'upcoming', gameTime: 'Sun Mar 22' },
       ],
       [
-        { id: 'w-r3-0', status: 'upcoming', gameTime: 'Fri Mar 28' },
-        { id: 'w-r3-1', status: 'upcoming', gameTime: 'Fri Mar 28' },
+        { id: 'w-r3-0', status: 'upcoming', gameTime: 'Fri Mar 27' },
+        { id: 'w-r3-1', status: 'upcoming', gameTime: 'Fri Mar 27' },
       ],
       [
-        { id: 'w-r4-0', status: 'upcoming', gameTime: 'Sun Mar 30' },
+        { id: 'w-r4-0', status: 'upcoming', gameTime: 'Sun Mar 29' },
       ],
     ],
   },
@@ -199,17 +203,17 @@ const BRACKET_DATA: BRegion[] = [
 const FINAL_FOUR_DATA: FinalFour = {
   semi1: {
     id: 'ff-1',
-    gameTime: 'Sat Apr 5 · 6:09 PM ET',
+    gameTime: 'Sat Apr 4 · 6:09 PM ET',
     status: 'upcoming',
   },
   semi2: {
     id: 'ff-2',
-    gameTime: 'Sat Apr 5 · 8:49 PM ET',
+    gameTime: 'Sat Apr 4 · 8:49 PM ET',
     status: 'upcoming',
   },
   championship: {
     id: 'ncg',
-    gameTime: 'Mon Apr 7 · 9:20 PM ET',
+    gameTime: 'Mon Apr 6 · 9:20 PM ET',
     status: 'upcoming',
   },
 };
@@ -238,11 +242,11 @@ async function fetchApiGames(): Promise<ApiGame[]> {
   }
 }
 
-/** Fuzzy match: do two team name strings share a 4+ char word? */
+/** Fuzzy match: do two team name strings share a 3+ char word? */
 function teamsMatch(a: string, b: string): boolean {
   const aL = a.toLowerCase().replace(/[^a-z ]/g, '');
   const bL = b.toLowerCase().replace(/[^a-z ]/g, '');
-  return aL.split(' ').filter(w => w.length >= 4).some(w => bL.includes(w));
+  return aL.split(' ').filter(w => w.length >= 3).some(w => bL.includes(w));
 }
 
 /** Try to attach API odds to a bracket matchup */
@@ -692,7 +696,7 @@ function FinalFourView({ data, onTeamClick }: { data: FinalFour; onTeamClick: (t
   return (
     <div className="px-4 py-4">
       <p style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', color: 'rgba(255,213,79,0.5)', marginBottom: '16px' }}>
-        Final Four · San Antonio, TX
+        Final Four · Indianapolis, IN
       </p>
 
       {/* Semis */}
@@ -710,7 +714,7 @@ function FinalFourView({ data, onTeamClick }: { data: FinalFour; onTeamClick: (t
       {/* Championship */}
       <div className="flex flex-col items-center">
         <p style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', color: 'rgba(255,213,79,0.6)', marginBottom: '8px' }}>
-          🏆 National Championship · Apr 7
+          🏆 National Championship · Apr 6
         </p>
         <div style={{ width: CHAMP_W }}>
           <MatchupCard matchup={data.championship} onTeamClick={onTeamClick} />
