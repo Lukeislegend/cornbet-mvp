@@ -1,5 +1,7 @@
 [build]
   publish = "dist"
+  # Always deploy — never skip based on content hash
+  ignore = "exit 1"
 
 # Proxy /api/* to the Supabase Edge Function (mirrors the Vite dev proxy)
 [[redirects]]
