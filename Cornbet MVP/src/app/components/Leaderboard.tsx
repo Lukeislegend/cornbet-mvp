@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { motion } from 'motion/react';
 import { useApp } from '../context/AppContext';
 import { MaizeBankCard } from './MaizeBankCard';
-import { projectId } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 
 interface LeaderboardPlayer {
   userId:        string;
@@ -12,7 +12,7 @@ interface LeaderboardPlayer {
   isCurrentUser: boolean;
 }
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce`;
+const BASE = API_BASE;
 
 // Rank emoji helpers
 const rankMedal = (i: number) =>

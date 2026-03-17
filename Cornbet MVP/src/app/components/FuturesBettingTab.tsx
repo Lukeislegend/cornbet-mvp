@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { RefreshCw, Trophy, Wifi, WifiOff } from 'lucide-react';
-import { projectId, publicAnonKey } from '@supabase/info';
+import { publicAnonKey } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 import { BetSlip } from './BetSlip';
 import { GlossButton } from './GlossButton';
 import { useApp } from '../context/AppContext';
@@ -112,7 +113,7 @@ function buildAbbr(name: string): string {
 
 async function fetchFutures(): Promise<{ name: string; odds: string }[]> {
   const res = await fetch(
-    `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce/ncaab-futures`,
+    `${API_BASE}/ncaab-futures`,
     { headers: { Authorization: `Bearer ${publicAnonKey}` } }
   );
   if (!res.ok) return [];

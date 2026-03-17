@@ -4,7 +4,7 @@ import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { GlossButton } from './GlossButton';
 import { useApp } from '../context/AppContext';
-import { projectId } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 
 interface GameData {
   id: string;
@@ -13,7 +13,7 @@ interface GameData {
   time: string;
 }
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce`;
+const BASE = API_BASE;
 
 export function AdminResults() {
   const { session, gameResults, refreshGameResults } = useApp();

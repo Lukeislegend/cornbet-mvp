@@ -5,7 +5,8 @@ import { ChevronLeft, Trophy, Zap } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { BetSlip } from './BetSlip';
-import { projectId, publicAnonKey } from '@supabase/info';
+import { publicAnonKey } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 
 // ─── Layout constants ─────────────────────────────────────────────────────────
 const CARD_H  = 60;   // height of one matchup card (px)
@@ -226,7 +227,7 @@ interface ApiGame {
 async function fetchApiGames(): Promise<ApiGame[]> {
   try {
     const res = await fetch(
-      `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce/ncaab-odds`,
+      `${API_BASE}/ncaab-odds`,
       { headers: { Authorization: `Bearer ${publicAnonKey}` } }
     );
     if (!res.ok) return [];

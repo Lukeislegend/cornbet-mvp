@@ -11,7 +11,8 @@ import { FuturesBettingTab } from './FuturesBettingTab';
 import { useApp } from '../context/AppContext';
 import type { BetLeg } from '../context/AppContext';
 import { TrendingUp, ListOrdered, Layers, RefreshCw, Wifi, WifiOff, GitBranch } from 'lucide-react';
-import { projectId, publicAnonKey } from '@supabase/info';
+import { publicAnonKey } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 
 interface BettingLine {
   id: string;
@@ -61,7 +62,7 @@ const FALLBACK_GAMES: GameData[] = [
 // ─── Fetch live NCAAB games from server ──────────────────────────────────────
 async function fetchNcaabGames(): Promise<GameData[]> {
   const res = await fetch(
-    `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce/ncaab-odds`,
+    `${API_BASE}/ncaab-odds`,
     { headers: { Authorization: `Bearer ${publicAnonKey}` } }
   );
   if (!res.ok) {

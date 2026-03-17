@@ -21,4 +21,15 @@ export default defineConfig({
 
   // File types to support raw imports. Never add .css, .tsx, or .ts files to this.
   assetsInclude: ['**/*.svg', '**/*.csv'],
+
+  // Proxy /api to Supabase for local dev (avoids CORS)
+  server: {
+    proxy: {
+      '/api': {
+        target: 'https://hkguncfsuubqzsdguhfk.supabase.co',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, '/functions/v1/make-server-55aa94ce'),
+      },
+    },
+  },
 })

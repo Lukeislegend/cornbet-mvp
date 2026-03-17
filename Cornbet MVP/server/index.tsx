@@ -165,8 +165,6 @@ async function writeBank(amount: number): Promise<void> {
 // ─── Game results (for bet resolution) ───────────────────────────────────────
 // Format: { "Away vs Home": { winner, total, spreadWinners } }
 
-const KEY_GAME_RESULTS = "cornbet:games:results";
-
 interface GameResult {
   winner: string;
   total: number;
@@ -480,135 +478,6 @@ app.put(`${PREFIX}/game-results`, async (c) => {
     return c.json(current);
   } catch (err) {
     console.log("Error in PUT /game-results:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FUTURES CHAMPION — GET/PUT (for championship winner bet resolution)
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const champion = await readFuturesChampion();
-    return c.json({ champion: champion ?? null });
-  } catch (err) {
-    console.log("Error in GET /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-app.put(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const { champion } = await c.req.json();
-    const team = typeof champion === "string" ? champion.trim() : "";
-    if (!team) return c.json({ error: "Champion team name is required" }, 400);
-    await writeFuturesChampion(team);
-    console.log(`PUT /futures/champion userId=${userId} → "${team}"`);
-    return c.json({ champion: team });
-  } catch (err) {
-    console.log("Error in PUT /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FUTURES CHAMPION — GET/PUT (for championship winner bet resolution)
-// MVP: any authenticated user can update
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const champion = await readFuturesChampion();
-    return c.json({ champion });
-  } catch (err) {
-    console.log("Error in GET /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-app.put(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const { champion } = await c.req.json();
-    const team = typeof champion === "string" ? champion.trim() : "";
-    if (!team) return c.json({ error: "champion (team name) is required" }, 400);
-    await writeFuturesChampion(team);
-    console.log(`PUT /futures/champion userId=${userId} → "${team}"`);
-    return c.json({ champion: team });
-  } catch (err) {
-    console.log("Error in PUT /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FUTURES CHAMPION — GET/PUT (for championship winner bet resolution)
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const champion = await readFuturesChampion();
-    return c.json({ champion });
-  } catch (err) {
-    console.log("Error in GET /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-app.put(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const { champion: team } = await c.req.json();
-    const trimmed = typeof team === "string" ? team.trim() : "";
-    if (!trimmed) return c.json({ error: "Champion team name is required" }, 400);
-    await writeFuturesChampion(trimmed);
-    console.log(`PUT /futures/champion userId=${userId} → "${trimmed}"`);
-    return c.json({ champion: trimmed });
-  } catch (err) {
-    console.log("Error in PUT /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-// ══════════════════════════════════════════════════════════════════════════════
-// FUTURES CHAMPION — GET/PUT (for championship winner bet resolution)
-// ══════════════════════════════════════════════════════════════════════════════
-
-app.get(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const champion = await readFuturesChampion();
-    return c.json({ champion });
-  } catch (err) {
-    console.log("Error in GET /futures/champion:", err);
-    return c.json({ error: String(err) }, 500);
-  }
-});
-
-app.put(`${PREFIX}/futures/champion`, async (c) => {
-  try {
-    const userId = await requireAuth(c);
-    if (typeof userId !== "string") return userId;
-    const { champion } = await c.req.json();
-    const team = typeof champion === "string" ? champion.trim() : "";
-    if (!team) return c.json({ error: "Champion team name is required" }, 400);
-    await writeFuturesChampion(team);
-    console.log(`PUT /futures/champion userId=${userId} champion="${team}"`);
-    return c.json({ champion: team });
-  } catch (err) {
-    console.log("Error in PUT /futures/champion:", err);
     return c.json({ error: String(err) }, 500);
   }
 });
@@ -1223,7 +1092,7 @@ const CORS_HEADERS = {
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response(null, { status: 204, headers: CORS_HEADERS });
+    return new Response("ok", { status: 200, headers: CORS_HEADERS });
   }
   const res = await app.fetch(req);
   // Ensure CORS headers on all responses

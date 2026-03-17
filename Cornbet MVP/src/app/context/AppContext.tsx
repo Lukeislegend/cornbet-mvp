@@ -5,6 +5,7 @@ import {
 import type { User, Session } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import { projectId, publicAnonKey } from '@supabase/info';
+import { API_BASE } from '../lib/apiBase';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -105,7 +106,7 @@ export const resolveBetOutcome = (bet: PlacedBet, gameResults: GameResultsMap, c
 
 // ─── API base ─────────────────────────────────────────────────────────────────
 
-const BASE = `https://${projectId}.supabase.co/functions/v1/make-server-55aa94ce`;
+const BASE = API_BASE;
 
 // ─── KV key schema (mirrors the server) ──────────────────────────────────────
 
