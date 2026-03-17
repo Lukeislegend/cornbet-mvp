@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'motion/react';
 import { useApp } from '../context/AppContext';
 
 const STARTING_VALUE = 1000;
-const GOAL_VALUE     = 2000;
+const GOAL_VALUE     = 5000;
 
 interface CoinBurst {
   id: number;
@@ -156,7 +156,7 @@ export function MaizeBankCard({ showCoinBurst = false, coinCount = 1, compact = 
               Every loss feeds the MaizeBank.
             </span>
             <span style={{ color: 'rgba(255,255,255,0.25)', fontSize: '10px' }}>
-              Goal: $2,000
+              Goal: $5,000
             </span>
           </div>
         </div>

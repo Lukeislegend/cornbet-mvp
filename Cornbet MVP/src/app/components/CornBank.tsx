@@ -7,7 +7,7 @@ import { MaizeBankCard } from './MaizeBankCard';
 import { useApp } from '../context/AppContext';
 
 const STARTING_VALUE = 1000;
-const GOAL_VALUE = 2000;
+const GOAL_VALUE = 5000;
 
 export function CornBank() {
   const { groupBank, placedBets } = useApp();
@@ -18,10 +18,10 @@ export function CornBank() {
 
   const milestones = [
     { label: 'Seed Money',       target: 1000, emoji: '🌱' },
-    { label: '25% to Goal',      target: 1250, emoji: '🌽' },
-    { label: 'Halfway There',    target: 1500, emoji: '🔥' },
-    { label: '75% to Goal',      target: 1750, emoji: '⚡' },
-    { label: 'DraftHaus Ready',  target: 2000, emoji: '₿' },
+    { label: '25% to Goal',      target: 2000, emoji: '🌽' },
+    { label: 'Halfway There',    target: 3000, emoji: '🔥' },
+    { label: '75% to Goal',      target: 4000, emoji: '⚡' },
+    { label: 'DraftHaus Ready',  target: 5000, emoji: '₿' },
   ];
 
   return (
