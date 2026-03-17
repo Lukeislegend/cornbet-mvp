@@ -499,8 +499,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error('CornBet: startup getSession() error:', err);
       } finally {
-        // Always clear the loading screen, even on error
+        console.log('CornBet: finally block — setting isLoading false, mounted=', mounted);
         if (mounted) setIsLoading(false);
+        console.log('CornBet: isLoading should now be false');
       }
 
       // ── Step 2: subscribe to FUTURE auth changes only ─────────────────────
