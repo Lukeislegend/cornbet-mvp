@@ -119,7 +119,7 @@ function BetCard({ bet, index }: { bet: PlacedBet; index: number }) {
           )}
           {bet.status === 'lost' && (
             <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '12px', fontStyle: 'italic' }}>
-              → Group Bank
+              → Corn Bank 🌽
             </p>
           )}
           {bet.status === 'pending' && (

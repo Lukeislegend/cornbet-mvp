@@ -1,11 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { LogOut, User } from 'lucide-react';
+import { useNavigate } from 'react-router';
 import { useApp } from '../context/AppContext';
 
 export function WalletBar() {
   const { playWallet, groupBank, user, displayName, signOut } = useApp();
   const [confirmingSignOut, setConfirmingSignOut] = useState(false);
+  const navigate = useNavigate();
 
   const handleSignOutPress = () => {
     if (confirmingSignOut) {
@@ -31,8 +33,12 @@ export function WalletBar() {
     >
       {/* ── Main balance row ─────────────────────────────────────────── */}
       <div className="flex items-center justify-between px-5 py-3">
-        {/* Play Balance */}
-        <div className="flex flex-col">
+        {/* Play Balance — tappable → /wallet */}
+        <button
+          onClick={() => navigate('/wallet')}
+          className="flex flex-col text-left active:scale-95 transition-transform"
+          style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+        >
           <span
             style={{
               fontSize: '9px',
@@ -42,7 +48,7 @@ export function WalletBar() {
               textTransform: 'uppercase',
             }}
           >
-            Play Balance
+            Play Balance ›
           </span>
           <motion.span
             key={playWallet}
@@ -59,7 +65,7 @@ export function WalletBar() {
           >
             ${playWallet.toFixed(2)}
           </motion.span>
-        </div>
+        </button>
 
         {/* Center: group tag */}
         <div
@@ -74,8 +80,12 @@ export function WalletBar() {
           </span>
         </div>
 
-        {/* Group Bank */}
-        <div className="flex flex-col items-end">
+        {/* Corn Bank — tappable → /corn-bank */}
+        <button
+          onClick={() => navigate('/corn-bank')}
+          className="flex flex-col items-end active:scale-95 transition-transform"
+          style={{ cursor: 'pointer', background: 'none', border: 'none', padding: 0 }}
+        >
           <span
             style={{
               fontSize: '9px',
@@ -85,7 +95,7 @@ export function WalletBar() {
               textTransform: 'uppercase',
             }}
           >
-            Group Bank 🌽
+            Corn Bank 🌽 ‹
           </span>
           <motion.span
             key={groupBank}
@@ -102,7 +112,7 @@ export function WalletBar() {
           >
             ${groupBank.toFixed(2)}
           </motion.span>
-        </div>
+        </button>
       </div>
 
       {/* ── User row ─────────────────────────────────────────────────── */}
