@@ -1045,6 +1045,88 @@ app.post(`${PREFIX}/bets/resolve-batch`, async (c) => {
 });
 
 // ══════════════════════════════════════════════════════════════════════════════
+// POST /bets/resolve-all
+//
+// Admin-level endpoint: resolves pending bets for ALL registered users using
+// the game results already stored in KV. Called from the admin page after
+// game results are entered manually.
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.post(`${PREFIX}/bets/resolve-all`, async (c) => {
+  try {
+    const userId = await requireAuth(c);
+    if (typeof userId !== "string") return userId;
+
+    const gameResults = await readGameResults();
+    const champion    = await readFuturesChampion();
+
+    if (Object.keys(gameResults).length === 0 && !champion) {
+      return c.json({ ok: true, resolved: 0, users: 0, message: "No game results stored yet" });
+    }
+
+    const registry = await readRegistry();
+    const userIds  = Object.keys(registry);
+    let totalResolved = 0;
+    const errors: string[] = [];
+
+    for (const uid of userIds) {
+      const [straightRaw, parlayRaw, futureRaw] = await Promise.all([
+        kv.getByPrefix(keys.betPfx(uid)),
+        kv.getByPrefix(keys.parlayPfx(uid)),
+        kv.getByPrefix(keys.futurePfx(uid)),
+      ]);
+
+      const pendingBets = [
+        ...(straightRaw as any[]),
+        ...(parlayRaw   as any[]),
+        ...(futureRaw   as any[]),
+      ].filter(b => b?.status === "pending");
+
+      for (const bet of pendingBets) {
+        const outcome = resolveServerBet(bet, gameResults, champion);
+        if (outcome === "pending") continue;
+
+        const kvKey = (bet as any)._kvKey as string | undefined;
+        if (!kvKey) continue;
+
+        try {
+          const existing = await kv.get(kvKey) as any;
+          if (!existing || existing.status !== "pending") continue;
+
+          const stake = typeof existing.stake === "number" ? existing.stake : 0;
+
+          if (outcome === "won") {
+            const winPayout = typeof existing.payout === "number" && existing.payout > 0
+              ? existing.payout : stake;
+            const [curBal, curBank] = await Promise.all([readBalance(uid), readBank()]);
+            await writeBalance(uid, curBal + winPayout);
+            await writeBank(Math.round((curBank - winPayout) * 100) / 100);
+            await kv.set(kvKey, { ...existing, status: "won", payout: winPayout, resolvedAt: Date.now() });
+            console.log(`resolve-all WON uid=${uid} payout=$${winPayout}`);
+          } else {
+            const curBank = await readBank();
+            await writeBank(curBank + stake);
+            await kv.set(kvKey, { ...existing, status: "lost", payout: 0, resolvedAt: Date.now() });
+            console.log(`resolve-all LOST uid=${uid} stake=$${stake}`);
+          }
+          totalResolved++;
+        } catch (itemErr) {
+          errors.push(`${uid}/${kvKey}: ${itemErr}`);
+        }
+      }
+    }
+
+    const newBank = await readBank();
+    console.log(`resolve-all: ${totalResolved} bets resolved across ${userIds.length} users, bank=$${newBank}`);
+    return c.json({ ok: true, resolved: totalResolved, users: userIds.length, newBank, errors });
+
+  } catch (err) {
+    console.log("Error in POST /bets/resolve-all:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
 // POST /bets/auto-resolve
 //
 // Fetches completed NCAAB games from ESPN, populates the game-results KV store,
