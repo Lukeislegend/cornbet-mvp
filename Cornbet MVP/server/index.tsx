@@ -1417,8 +1417,10 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
       { sportKey: "basketball_ncaab_final_four",           market: "final_four",     label: "Make the Final Four 🏀" },
       { sportKey: "basketball_ncaab_south_region_winner",   market: "south_region",   label: "Win South Region" },
       { sportKey: "basketball_ncaab_east_region_winner",    market: "east_region",    label: "Win East Region" },
-      { sportKey: "basketball_ncaab_midwest_region_winner", market: "midwest_region", label: "Win Midwest Region" },
-      { sportKey: "basketball_ncaab_west_region_winner",    market: "west_region",    label: "Win West Region" },
+      { sportKey: "basketball_ncaab_midwest_region_winner", market: "midwest_region",  label: "Win Midwest Region" },
+      { sportKey: "basketball_ncaab_west_region_winner",    market: "west_region",     label: "Win West Region" },
+      { sportKey: "basketball_ncaab_elite_eight",           market: "elite_eight",     label: "Make the Elite Eight" },
+      { sportKey: "basketball_ncaab_sweet_sixteen",         market: "sweet_sixteen",   label: "Make the Sweet 16" },
     ];
 
     const fetchMarket = async (sportKey: string, market: string) => {

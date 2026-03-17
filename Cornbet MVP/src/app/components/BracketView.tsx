@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router';
-import { ChevronLeft, Trophy, Zap, X } from 'lucide-react';
+import { ChevronLeft, ChevronDown, Trophy, Zap, X } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { BetSlip } from './BetSlip';
@@ -335,15 +335,49 @@ interface BetOption {
   type: 'matchup' | 'futures';
 }
 
+// Ordered futures categories always shown (odds or "Coming Soon")
+const FUTURES_CATEGORIES = [
+  { market: 'championship',  label: 'Win Championship',      sublabel: 'NCAA Tournament Winner',   icon: '🏆' },
+  { market: '__region__',    label: 'Win __Region__ Region', sublabel: '__Region__ Regional Champ', icon: '🗺️' },
+  { market: 'final_four',    label: 'Make the Final Four',   sublabel: 'Reach the Final Four',      icon: '🎯' },
+  { market: 'elite_eight',   label: 'Make the Elite Eight',  sublabel: 'Reach the Elite Eight',     icon: '⚡' },
+  { market: 'sweet_sixteen', label: 'Make the Sweet 16',     sublabel: 'Reach the Sweet 16',        icon: '✨' },
+];
+
 interface TeamBetSheetProps {
   isOpen: boolean;
   onClose: () => void;
   team: BTeam;
   options: BetOption[];
+  regionMarket: string | null;   // e.g. 'east_region', null for Final Four games
   onSelect: (opt: BetOption) => void;
 }
 
-function TeamBetSheet({ isOpen, onClose, team, options, onSelect }: TeamBetSheetProps) {
+function TeamBetSheet({ isOpen, onClose, team, options, regionMarket, onSelect }: TeamBetSheetProps) {
+  const [expandedMarket, setExpandedMarket] = useState<string | null>(null);
+
+  // Reset expanded state when sheet opens/closes
+  useEffect(() => { if (!isOpen) setExpandedMarket(null); }, [isOpen]);
+
+  const mlOption = options.find(o => o.type === 'matchup');
+
+  // Build the ordered futures list, substituting __region__ with the real region market
+  const regionLabel = regionMarket
+    ? regionMarket.replace('_region', '').charAt(0).toUpperCase() + regionMarket.replace('_region', '').slice(1)
+    : '';
+
+  const categories = FUTURES_CATEGORIES
+    .filter(cat => cat.market !== '__region__' || regionMarket)
+    .map(cat => {
+      if (cat.market !== '__region__') return cat;
+      return {
+        market: regionMarket!,
+        label: `Win ${regionLabel} Region`,
+        sublabel: `${regionLabel} Regional Champion`,
+        icon: '🗺️',
+      };
+    });
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -361,22 +395,25 @@ function TeamBetSheet({ isOpen, onClose, team, options, onSelect }: TeamBetSheet
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl"
             style={{
               background: '#1A1600',
               maxWidth: '393px',
               margin: '0 auto',
               border: '1px solid rgba(255,213,79,0.2)',
               borderBottom: 'none',
+              maxHeight: '88vh',
+              display: 'flex',
+              flexDirection: 'column',
             }}
           >
             {/* Handle */}
-            <div className="flex justify-center pt-4 pb-2">
+            <div className="flex justify-center pt-4 pb-2 flex-shrink-0">
               <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,213,79,0.2)' }} />
             </div>
 
             {/* Header */}
-            <div className="flex items-center justify-between px-5 pb-4">
+            <div className="flex items-center justify-between px-5 pb-3 flex-shrink-0">
               <div>
                 <p style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,213,79,0.5)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>
                   Seed #{team.seed}
@@ -394,58 +431,155 @@ function TeamBetSheet({ isOpen, onClose, team, options, onSelect }: TeamBetSheet
               </button>
             </div>
 
-            {/* Options */}
-            <div className="px-4 pb-8 space-y-2">
-              {options.map((opt, i) => {
-                const isPending = opt.odds === '—';
-                return (
-                  <motion.button
-                    key={opt.id}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.06 }}
-                    onClick={() => onSelect(opt)}
-                    disabled={isPending}
-                    className="w-full flex items-center justify-between px-4 py-4 rounded-2xl active:scale-[0.98] transition-transform"
+            {/* Scrollable content */}
+            <div className="overflow-y-auto px-4 pb-8" style={{ flex: 1 }}>
+
+              {/* ── Moneyline section ── */}
+              {mlOption && (
+                <div className="mb-4">
+                  <p style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,213,79,0.4)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                    This Matchup
+                  </p>
+                  <button
+                    onClick={() => onSelect(mlOption)}
+                    disabled={mlOption.odds === '—'}
+                    className="w-full flex items-center justify-between px-4 py-3 rounded-2xl active:scale-[0.98] transition-transform"
                     style={{
-                      background: opt.type === 'futures'
-                        ? 'rgba(255,213,79,0.07)'
-                        : 'rgba(0,0,0,0.35)',
-                      border: `1px solid ${opt.type === 'futures' ? 'rgba(255,213,79,0.25)' : 'rgba(255,255,255,0.08)'}`,
-                      opacity: isPending ? 0.45 : 1,
-                      cursor: isPending ? 'default' : 'pointer',
+                      background: 'rgba(0,0,0,0.35)',
+                      border: '1px solid rgba(255,255,255,0.08)',
+                      opacity: mlOption.odds === '—' ? 0.45 : 1,
+                      cursor: mlOption.odds === '—' ? 'default' : 'pointer',
                     }}
                   >
                     <div className="text-left">
-                      <p style={{ fontSize: '15px', fontWeight: '700', color: 'white', marginBottom: '3px' }}>
-                        {opt.label}
-                      </p>
-                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-                        {opt.sublabel}
-                      </p>
+                      <p style={{ fontSize: '14px', fontWeight: '700', color: 'white', marginBottom: '2px' }}>{mlOption.label}</p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>{mlOption.sublabel}</p>
                     </div>
-                    <span
-                      style={{
-                        fontSize: '16px',
-                        fontWeight: '800',
-                        color: isPending ? 'rgba(255,255,255,0.3)' : opt.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
-                        flexShrink: 0,
-                        marginLeft: '12px',
-                      }}
-                    >
-                      {opt.odds}
+                    <span style={{
+                      fontSize: '16px', fontWeight: '800', flexShrink: 0, marginLeft: '12px',
+                      color: mlOption.odds === '—' ? 'rgba(255,255,255,0.3)' : mlOption.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
+                    }}>
+                      {mlOption.odds}
                     </span>
-                  </motion.button>
-                );
-              })}
-
-              {options.length === 0 && (
-                <div className="text-center py-8">
-                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
-                    No odds available yet for this team
-                  </p>
+                  </button>
                 </div>
               )}
+
+              {/* ── Futures section ── */}
+              <div>
+                <p style={{ fontSize: '9px', fontWeight: '700', color: 'rgba(255,213,79,0.4)', letterSpacing: '0.8px', textTransform: 'uppercase', marginBottom: '8px' }}>
+                  Futures Markets
+                </p>
+
+                <div className="space-y-2">
+                  {categories.map(({ market, label, sublabel, icon }, i) => {
+                    const opt = options.find(o => o.type === 'futures' && o.id === `future-${market}-${team.name}`);
+                    const hasOdds = !!opt && opt.odds !== '—';
+                    const isExpanded = expandedMarket === market;
+
+                    return (
+                      <motion.div
+                        key={market}
+                        initial={{ opacity: 0, y: 8 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: i * 0.05 }}
+                      >
+                        {/* Category row header */}
+                        <button
+                          onClick={() => hasOdds && setExpandedMarket(isExpanded ? null : market)}
+                          disabled={!hasOdds}
+                          className="w-full flex items-center justify-between px-4 py-3 active:scale-[0.98] transition-transform"
+                          style={{
+                            background: hasOdds
+                              ? isExpanded ? 'rgba(255,213,79,0.12)' : 'rgba(255,213,79,0.07)'
+                              : 'rgba(255,255,255,0.03)',
+                            border: `1px solid ${hasOdds ? 'rgba(255,213,79,0.22)' : 'rgba(255,255,255,0.07)'}`,
+                            borderRadius: isExpanded ? '14px 14px 0 0' : '14px',
+                            cursor: hasOdds ? 'pointer' : 'default',
+                            opacity: hasOdds ? 1 : 0.5,
+                          }}
+                        >
+                          <div className="flex items-center gap-3">
+                            <span style={{ fontSize: '18px', lineHeight: 1 }}>{icon}</span>
+                            <div className="text-left">
+                              <p style={{ fontSize: '14px', fontWeight: '700', color: hasOdds ? 'white' : 'rgba(255,255,255,0.4)', marginBottom: '1px' }}>
+                                {label}
+                              </p>
+                              <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)' }}>
+                                {sublabel}
+                              </p>
+                            </div>
+                          </div>
+
+                          <div className="flex items-center gap-2 flex-shrink-0 ml-3">
+                            {hasOdds ? (
+                              <>
+                                <span style={{
+                                  fontSize: '15px', fontWeight: '800',
+                                  color: opt!.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
+                                }}>
+                                  {opt!.odds}
+                                </span>
+                                <ChevronDown
+                                  size={15}
+                                  style={{
+                                    color: 'rgba(255,213,79,0.5)',
+                                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                                    transition: 'transform 0.2s ease',
+                                  }}
+                                />
+                              </>
+                            ) : (
+                              <span style={{
+                                fontSize: '10px', fontWeight: '600',
+                                color: 'rgba(255,255,255,0.2)',
+                                background: 'rgba(255,255,255,0.06)',
+                                padding: '3px 8px', borderRadius: '20px',
+                              }}>
+                                Coming Soon
+                              </span>
+                            )}
+                          </div>
+                        </button>
+
+                        {/* Expanded: Place Bet panel */}
+                        <AnimatePresence>
+                          {isExpanded && opt && (
+                            <motion.div
+                              initial={{ height: 0, opacity: 0 }}
+                              animate={{ height: 'auto', opacity: 1 }}
+                              exit={{ height: 0, opacity: 0 }}
+                              transition={{ duration: 0.2, ease: 'easeInOut' }}
+                              style={{ overflow: 'hidden' }}
+                            >
+                              <button
+                                onClick={() => onSelect(opt)}
+                                className="w-full flex items-center justify-between px-4 py-3 active:scale-[0.98] transition-transform"
+                                style={{
+                                  background: 'rgba(255,213,79,0.12)',
+                                  border: '1px solid rgba(255,213,79,0.3)',
+                                  borderTop: 'none',
+                                  borderRadius: '0 0 14px 14px',
+                                }}
+                              >
+                                <span style={{ fontSize: '13px', fontWeight: '700', color: '#FFD54F' }}>
+                                  Place Bet · {team.name}
+                                </span>
+                                <span style={{
+                                  fontSize: '16px', fontWeight: '800',
+                                  color: opt.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
+                                }}>
+                                  {opt.odds}
+                                </span>
+                              </button>
+                            </motion.div>
+                          )}
+                        </AnimatePresence>
+                      </motion.div>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
           </motion.div>
         </>
@@ -741,9 +875,10 @@ export function BracketView() {
   const [futureOdds, setFutureOdds]     = useState<Map<string, { odds: string; market: string }[]>>(new Map());
 
   // Team bet sheet state
-  const [sheetTeam, setSheetTeam]       = useState<BTeam | null>(null);
-  const [sheetOptions, setSheetOptions] = useState<BetOption[]>([]);
-  const [sheetOpen, setSheetOpen]       = useState(false);
+  const [sheetTeam, setSheetTeam]             = useState<BTeam | null>(null);
+  const [sheetOptions, setSheetOptions]       = useState<BetOption[]>([]);
+  const [sheetRegionMarket, setSheetRegion]   = useState<string | null>(null);
+  const [sheetOpen, setSheetOpen]             = useState(false);
 
   // Bet slip state (opened from sheet selection)
   const [betSlipOpen, setBetSlipOpen]   = useState(false);
@@ -798,29 +933,18 @@ export function BracketView() {
     }
   };
 
-  /** Map market key → readable label */
-  const FUTURES_LABELS: Record<string, string> = {
-    championship:   'Win Championship 🏆',
-    final_four:     'Make the Final Four 🏀',
-    south_region:   'Win South Region',
-    east_region:    'Win East Region',
-    midwest_region: 'Win Midwest Region',
-    west_region:    'Win West Region',
-  };
-  const FUTURES_SUBLABELS: Record<string, string> = {
-    championship:   'Futures · NCAA Tournament Winner',
-    final_four:     'Futures · Reach the Final Four',
-    south_region:   'Futures · Regional Winner',
-    east_region:    'Futures · Regional Winner',
-    midwest_region: 'Futures · Regional Winner',
-    west_region:    'Futures · Regional Winner',
-  };
-
   // Build and open the team options sheet
   const handleTeamClick = (team: BTeam, matchup: BMatchup) => {
     const options: BetOption[] = [];
     const opponent = matchup.team1?.name === team.name ? matchup.team2 : matchup.team1;
     const round = getMatchupRound(matchup.id);
+
+    // Determine which region market applies to this team
+    const regionMarket = matchup.id.startsWith('mw-') ? 'midwest_region'
+      : matchup.id.startsWith('e-')  ? 'east_region'
+      : matchup.id.startsWith('w-')  ? 'west_region'
+      : matchup.id.startsWith('s-')  ? 'south_region'
+      : null; // Final Four / championship games have no region
 
     // Option 1: Win this matchup (moneyline)
     if (opponent && matchup.mlOdds) {
@@ -843,15 +967,15 @@ export function BracketView() {
       });
     }
 
-    // Options 2+: All available futures for this team
+    // Options 2+: All available futures for this team (stored by market key)
     const futEntry = [...futureOdds.entries()].find(([k]) => teamsMatch(k, team.name));
     if (futEntry) {
       const [, markets] = futEntry;
       for (const { odds, market } of markets) {
         options.push({
           id: `future-${market}-${team.name}`,
-          label: FUTURES_LABELS[market] ?? market,
-          sublabel: FUTURES_SUBLABELS[market] ?? 'Futures',
+          label: market,
+          sublabel: 'Futures',
           odds,
           type: 'futures',
         });
@@ -860,24 +984,36 @@ export function BracketView() {
 
     setSheetTeam(team);
     setSheetOptions(options);
+    setSheetRegion(regionMarket);
     setSheetOpen(true);
   };
 
   // When user picks an option from the sheet
   const handleOptionSelect = (opt: BetOption) => {
     if (!sheetTeam) return;
-    // Don't open if no real odds
     if (opt.odds === '—') return;
     setSheetOpen(false);
 
+    // For futures opts, the label is the market key — resolve the human label
+    const marketKey = opt.id.startsWith('future-')
+      ? opt.id.replace(`future-`, '').replace(`-${sheetTeam.name}`, '')
+      : null;
+    const futureCat = marketKey
+      ? FUTURES_CATEGORIES.find(c => c.market === marketKey || c.market === '__region__' && sheetRegionMarket === marketKey)
+      : null;
+    const humanLabel = futureCat
+      ? futureCat.label
+          .replace('__Region__', sheetRegionMarket?.replace('_region','').charAt(0).toUpperCase()! + sheetRegionMarket?.replace('_region','').slice(1)!)
+      : opt.label;
+
     const gameLabel = opt.type === 'futures'
-      ? opt.label.replace(' 🏆', '')
+      ? humanLabel
       : opt.label.replace('Beat ', `${sheetTeam.name} vs `);
 
     setActiveBet({
       type: opt.type === 'futures' ? 'Futures' : 'Moneyline',
       selection: opt.type === 'futures'
-        ? `${sheetTeam.name} — ${opt.label.replace(' 🏆', '')}`
+        ? `${sheetTeam.name} — ${humanLabel}`
         : `${sheetTeam.name} ML`,
       odds: opt.odds,
       game: gameLabel,
@@ -1015,6 +1151,7 @@ export function BracketView() {
           onClose={() => setSheetOpen(false)}
           team={sheetTeam}
           options={sheetOptions}
+          regionMarket={sheetRegionMarket}
           onSelect={handleOptionSelect}
         />
       )}
