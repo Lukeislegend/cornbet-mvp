@@ -7,4 +7,4 @@
 # Supabase's JWT key rotation (HS256 → ES256).
 [functions.make-server-55aa94ce]
 verify_jwt = false
-entrypoint = "index.tsx"
+entrypoint = "functions/make-server-55aa94ce/index.tsx"
