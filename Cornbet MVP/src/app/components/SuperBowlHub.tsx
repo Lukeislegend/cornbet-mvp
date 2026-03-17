@@ -486,10 +486,9 @@ export function SuperBowlHub() {
             )}
           </AnimatePresence>
         </div>
-      </div>
 
-      {/* Sticky footer CTAs */}
-      <AnimatePresence>
+        {/* Sticky footer CTAs — inside flex column so they pin to bottom */}
+        <AnimatePresence>
         {activeTab === 'games' && mode === 'parlay' && parlayLegs.length >= 2 && (
           <motion.div
             key="parlay-cta"
@@ -532,6 +531,7 @@ export function SuperBowlHub() {
           </motion.div>
         )}
       </AnimatePresence>
+      </div>
 
       {/* Single Bet Slip */}
       {selectedBet && (
