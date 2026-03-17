@@ -150,7 +150,7 @@ interface AppState {
   authError:    string | null;
   dbError:      string | null;
   signIn:       (email: string, password: string) => Promise<void>;
-  signUp:       (email: string, password: string, displayName: string) => Promise<void>;
+  signUp:       (email: string, password: string, displayName: string, inviteCode?: string) => Promise<void>;
   signOut:      () => Promise<void>;
   // App data
   displayName:  string | null;
@@ -626,7 +626,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   }, [bootstrapData]);
 
   // ── Sign Up ───────────────────────────────────────────────────────────────
-  const signUp = useCallback(async (email: string, password: string, displayName: string) => {
+  const signUp = useCallback(async (email: string, password: string, displayName: string, inviteCode?: string) => {
     setAuthError(null);
 
     // Create user via server (service role → email_confirm: true + init balance)
@@ -636,7 +636,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
         'Content-Type': 'application/json',
         Authorization: `Bearer ${publicAnonKey}`,
       },
-      body: JSON.stringify({ email, password, displayName }),
+      body: JSON.stringify({ email, password, displayName, inviteCode }),
     });
 
     if (!signupRes.ok) {

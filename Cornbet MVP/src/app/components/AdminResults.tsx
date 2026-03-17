@@ -81,6 +81,13 @@ export function AdminResults() {
   const [playerMsg,         setPlayerMsg]         = useState<string | null>(null);
   const [playersExpanded,   setPlayersExpanded]   = useState(false);
 
+  // Invite code management
+  const [inviteExpanded,    setInviteExpanded]    = useState(false);
+  const [currentCode,       setCurrentCode]       = useState<string | null>(null);
+  const [codeInput,         setCodeInput]         = useState('');
+  const [codeLoading,       setCodeLoading]       = useState(false);
+  const [codeMsg,           setCodeMsg]           = useState<string | null>(null);
+
   // Load existing champion on mount
   useEffect(() => {
     if (!session?.access_token) return;
@@ -283,6 +290,48 @@ export function AdminResults() {
       }
     } finally {
       setDeletingPlayer(null);
+    }
+  };
+
+  // ── load + save invite code ────────────────────────────────────────────────
+
+  const loadInviteCode = useCallback(async () => {
+    if (!session?.access_token) return;
+    setCodeLoading(true);
+    try {
+      const res = await fetch(`${BASE}/admin/invite-code`, {
+        headers: authHeaders(session.access_token),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentCode(data.code ?? null);
+        setCodeInput(data.code ?? '');
+      }
+    } finally {
+      setCodeLoading(false);
+    }
+  }, [session?.access_token]);
+
+  const handleSaveCode = async () => {
+    if (!session?.access_token) return;
+    setCodeLoading(true);
+    setCodeMsg(null);
+    try {
+      const res = await fetch(`${BASE}/admin/invite-code`, {
+        method: 'POST',
+        headers: authHeaders(session.access_token),
+        body: JSON.stringify({ code: codeInput.trim() }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setCurrentCode(data.code ?? null);
+        setCodeMsg(data.code ? `✓ Code set to "${data.code}"` : '✓ Invite code disabled — anyone can sign up');
+        setTimeout(() => setCodeMsg(null), 3500);
+      } else {
+        setCodeMsg(data.error ?? 'Save failed');
+      }
+    } finally {
+      setCodeLoading(false);
     }
   };
 
@@ -808,6 +857,114 @@ export function AdminResults() {
                           </div>
                         ))}
                       </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          {/* ── 🔑 Invite code ──────────────────────────────────────── */}
+          <div style={{ border: '1px solid rgba(255,255,255,0.07)', borderRadius: '16px', overflow: 'hidden' }}>
+            {/* Collapsible header */}
+            <button
+              onClick={() => {
+                const opening = !inviteExpanded;
+                setInviteExpanded(opening);
+                if (opening && currentCode === null) loadInviteCode();
+              }}
+              className="w-full flex items-center justify-between px-4 py-3"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              <div className="flex items-center gap-2">
+                <span style={{ fontSize: '14px', color: 'rgba(255,255,255,0.75)', fontWeight: '700' }}>🔑 Invite code</span>
+                {currentCode && (
+                  <span style={{ fontSize: '10px', background: 'rgba(102,187,106,0.15)', color: '#66BB6A', border: '1px solid rgba(102,187,106,0.3)', borderRadius: '6px', padding: '1px 7px', fontWeight: '700' }}>
+                    ON
+                  </span>
+                )}
+              </div>
+              <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '16px', lineHeight: 1 }}>
+                {inviteExpanded ? '▲' : '▼'}
+              </span>
+            </button>
+
+            <AnimatePresence>
+              {inviteExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="px-4 py-4 space-y-3">
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.35)', lineHeight: '1.5' }}>
+                      Set a code that new members must enter to create an account. Leave blank to allow open signups.
+                    </p>
+
+                    {/* Status pill */}
+                    <div style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)' }}>
+                      Current:{' '}
+                      {codeLoading
+                        ? <span style={{ color: 'rgba(255,255,255,0.3)' }}>loading…</span>
+                        : currentCode
+                          ? <span style={{ color: '#FFD54F', fontWeight: '700', fontFamily: 'monospace' }}>{currentCode}</span>
+                          : <span style={{ color: 'rgba(255,255,255,0.3)' }}>disabled (open signup)</span>
+                      }
+                    </div>
+
+                    {/* Input + save */}
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <input
+                        type="text"
+                        value={codeInput}
+                        onChange={e => setCodeInput(e.target.value)}
+                        placeholder="e.g. CORNFAM2025"
+                        style={{
+                          flex: 1,
+                          padding: '9px 12px',
+                          borderRadius: '10px',
+                          background: 'rgba(255,255,255,0.05)',
+                          border: '1px solid rgba(255,255,255,0.12)',
+                          color: 'white',
+                          fontSize: '13px',
+                          fontFamily: 'monospace',
+                          outline: 'none',
+                        }}
+                      />
+                      <button
+                        onClick={handleSaveCode}
+                        disabled={codeLoading}
+                        style={{
+                          padding: '9px 14px',
+                          borderRadius: '10px',
+                          background: 'rgba(255,179,0,0.15)',
+                          border: '1px solid rgba(255,213,79,0.3)',
+                          color: '#FFD54F',
+                          fontSize: '12px',
+                          fontWeight: '700',
+                          cursor: codeLoading ? 'not-allowed' : 'pointer',
+                          whiteSpace: 'nowrap',
+                        }}
+                      >
+                        {codeLoading ? '…' : 'Save'}
+                      </button>
+                    </div>
+
+                    <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.25)', lineHeight: '1.4' }}>
+                      Tip: clear the field and save to disable the code requirement.
+                    </p>
+
+                    {/* Feedback message */}
+                    {codeMsg && (
+                      <p style={{
+                        fontSize: '12px',
+                        color: codeMsg.startsWith('✓') ? '#66BB6A' : 'rgba(239,83,80,0.85)',
+                        fontWeight: '600',
+                      }}>
+                        {codeMsg}
+                      </p>
                     )}
                   </div>
                 </motion.div>

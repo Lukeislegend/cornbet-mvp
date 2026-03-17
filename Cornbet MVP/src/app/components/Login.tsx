@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-react';
+import { Eye, EyeOff, Mail, Lock, User, Key, AlertCircle, CheckCircle } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { Logo } from './Logo';
 import { useApp } from '../context/AppContext';
@@ -184,24 +184,27 @@ function SubmitButton({ label, loading, disabled }: SubmitButtonProps) {
 
 function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
   const { signUp } = useApp();
-  const [name,     setName]     = useState('');
-  const [email,    setEmail]    = useState('');
-  const [password, setPassword] = useState('');
-  const [confirm,  setConfirm]  = useState('');
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState<string | null>(null);
-  const [success,  setSuccess]  = useState(false);
+  const [name,        setName]        = useState('');
+  const [email,       setEmail]       = useState('');
+  const [password,    setPassword]    = useState('');
+  const [confirm,     setConfirm]     = useState('');
+  const [inviteCode,  setInviteCode]  = useState('');
+  const [loading,     setLoading]     = useState(false);
+  const [error,       setError]       = useState<string | null>(null);
+  const [success,     setSuccess]     = useState(false);
 
   // Per-field errors
-  const nameErr     = error?.toLowerCase().includes('display name') ? error : undefined;
-  const emailErr    = !nameErr && error?.toLowerCase().includes('email') ? error : undefined;
-  const passwordErr = error && !nameErr && !emailErr ? error : undefined;
+  const nameErr       = error?.toLowerCase().includes('display name') ? error : undefined;
+  const emailErr      = !nameErr && error?.toLowerCase().includes('email') ? error : undefined;
+  const inviteErr     = error?.toLowerCase().includes('invite') ? error : undefined;
+  const passwordErr   = error && !nameErr && !emailErr && !inviteErr ? error : undefined;
 
   const valid =
     name.trim().length >= 2 &&
     email.trim() &&
     password.length >= 6 &&
-    confirm === password;
+    confirm === password &&
+    inviteCode.trim().length > 0;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -213,10 +216,11 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
     if (!email.trim())           return setError('Please enter your email address.');
     if (password.length < 6)     return setError('Password must be at least 6 characters.');
     if (password !== confirm)    return setError('Passwords do not match.');
+    if (!inviteCode.trim())      return setError('Invite code is required.');
 
     setLoading(true);
     try {
-      await signUp(email.trim(), password, name.trim());
+      await signUp(email.trim(), password, name.trim(), inviteCode.trim());
       setSuccess(true);
       setTimeout(onSuccess, 800);
     } catch (err) {
@@ -277,8 +281,20 @@ function SignUpForm({ onSuccess }: { onSuccess: () => void }) {
         error={error?.includes('match') ? error : undefined}
       />
 
+      <Field
+        id="signup-invite"
+        label="Invite Code"
+        type="text"
+        value={inviteCode}
+        onChange={v => { setInviteCode(v); setError(null); }}
+        placeholder="Ask your group admin"
+        autoComplete="off"
+        icon={<Key size={15} />}
+        error={inviteErr}
+      />
+
       {/* Generic / server error */}
-      {error && !nameErr && !emailErr && !error?.includes('match') && !passwordErr?.includes('characters') && (
+      {error && !nameErr && !emailErr && !inviteErr && !error?.includes('match') && !passwordErr?.includes('characters') && (
         <div style={{
           padding: '10px 14px', borderRadius: '12px',
           background: 'rgba(239,83,80,0.1)', border: '1px solid rgba(239,83,80,0.3)',

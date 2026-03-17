@@ -92,6 +92,7 @@ async function requireAuth(c: any): Promise<string | Response> {
 const KEY_BANK         = "cornbet:bank:main";
 const KEY_REGISTRY     = "cornbet:registry";   // maps userId → { displayName, joinedAt }
 const KEY_GAME_RESULTS = "cornbet:games:results";
+const KEY_INVITE_CODE  = "cornbet:invite:code"; // optional gate for new signups
 const BANK_DEFAULT    = 1000;
 const BALANCE_DEFAULT = 500;
 
@@ -463,7 +464,7 @@ app.get(`${PREFIX}/db-ping`, async (c) => {
 
 app.post(`${PREFIX}/auth/signup`, async (c) => {
   try {
-    const { email, password, displayName } = await c.req.json() ?? {};
+    const { email, password, displayName, inviteCode } = await c.req.json() ?? {};
     if (!email || !password) return c.json({ error: "email and password are required" }, 400);
     if (password.length < 6)  return c.json({ error: "Password must be at least 6 characters" }, 400);
 
@@ -471,6 +472,16 @@ app.post(`${PREFIX}/auth/signup`, async (c) => {
     if (!trimmedName)            return c.json({ error: "Display name is required" }, 400);
     if (trimmedName.length < 2)  return c.json({ error: "Display name must be at least 2 characters" }, 400);
     if (trimmedName.length > 20) return c.json({ error: "Display name must be 20 characters or fewer" }, 400);
+
+    // Invite code gate — if a code is stored, the request must match it
+    const storedCode = await kv.get<string>(KEY_INVITE_CODE);
+    if (storedCode) {
+      const submitted = typeof inviteCode === "string" ? inviteCode.trim() : "";
+      if (submitted.toLowerCase() !== storedCode.toLowerCase()) {
+        console.log(`Signup rejected: invalid invite code from ${email}`);
+        return c.json({ error: "Invalid invite code. Ask the group admin for the code." }, 403);
+      }
+    }
 
     // MVP: limit to 10 users
     const registry = await readRegistry();
@@ -1654,6 +1665,42 @@ app.delete(`${PREFIX}/admin/registry`, async (c) => {
     return c.json({ ok: true, removedName: displayName });
   } catch (err) {
     console.log("Error in DELETE /admin/registry:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /admin/invite-code  — get the current invite code (or null if disabled)
+// POST /admin/invite-code — set or clear the invite code
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get(`${PREFIX}/admin/invite-code`, async (c) => {
+  try {
+    await requireAuth(c);
+    const code = await kv.get<string>(KEY_INVITE_CODE);
+    return c.json({ code: code ?? null });
+  } catch (err) {
+    console.log("Error in GET /admin/invite-code:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+app.post(`${PREFIX}/admin/invite-code`, async (c) => {
+  try {
+    const adminId = await requireAuth(c);
+    const { code } = await c.req.json() ?? {};
+    const trimmed = typeof code === "string" ? code.trim() : "";
+    if (trimmed) {
+      await kv.set(KEY_INVITE_CODE, trimmed);
+      console.log(`POST /admin/invite-code: code set by admin=${adminId}`);
+      return c.json({ ok: true, code: trimmed, enabled: true });
+    } else {
+      await kv.del(KEY_INVITE_CODE);
+      console.log(`POST /admin/invite-code: code cleared by admin=${adminId}`);
+      return c.json({ ok: true, code: null, enabled: false });
+    }
+  } catch (err) {
+    console.log("Error in POST /admin/invite-code:", err);
     return c.json({ error: String(err) }, 500);
   }
 });
