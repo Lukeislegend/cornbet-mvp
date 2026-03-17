@@ -92,7 +92,8 @@ async function requireAuth(c: any): Promise<string | Response> {
 const KEY_BANK         = "cornbet:bank:main";
 const KEY_REGISTRY     = "cornbet:registry";   // maps userId → { displayName, joinedAt }
 const KEY_GAME_RESULTS = "cornbet:games:results";
-const KEY_INVITE_CODE  = "cornbet:invite:code"; // optional gate for new signups
+const KEY_INVITE_CODE      = "cornbet:invite:code"; // overrides DEFAULT_INVITE_CODE if set
+const DEFAULT_INVITE_CODE  = "ninosdemaize";         // always-on default; change via admin UI
 const BANK_DEFAULT    = 1000;
 const BALANCE_DEFAULT = 500;
 
@@ -473,14 +474,12 @@ app.post(`${PREFIX}/auth/signup`, async (c) => {
     if (trimmedName.length < 2)  return c.json({ error: "Display name must be at least 2 characters" }, 400);
     if (trimmedName.length > 20) return c.json({ error: "Display name must be 20 characters or fewer" }, 400);
 
-    // Invite code gate — if a code is stored, the request must match it
-    const storedCode = await kv.get<string>(KEY_INVITE_CODE);
-    if (storedCode) {
-      const submitted = typeof inviteCode === "string" ? inviteCode.trim() : "";
-      if (submitted.toLowerCase() !== storedCode.toLowerCase()) {
-        console.log(`Signup rejected: invalid invite code from ${email}`);
-        return c.json({ error: "Invalid invite code. Ask the group admin for the code." }, 403);
-      }
+    // Invite code gate — always required; KV override takes precedence over default
+    const effectiveCode = (await kv.get<string>(KEY_INVITE_CODE)) ?? DEFAULT_INVITE_CODE;
+    const submitted = typeof inviteCode === "string" ? inviteCode.trim() : "";
+    if (submitted.toLowerCase() !== effectiveCode.toLowerCase()) {
+      console.log(`Signup rejected: invalid invite code from ${email}`);
+      return c.json({ error: "Invalid invite code. Ask the group admin for the code." }, 403);
     }
 
     // MVP: limit to 10 users
@@ -1677,8 +1676,8 @@ app.delete(`${PREFIX}/admin/registry`, async (c) => {
 app.get(`${PREFIX}/admin/invite-code`, async (c) => {
   try {
     await requireAuth(c);
-    const code = await kv.get<string>(KEY_INVITE_CODE);
-    return c.json({ code: code ?? null });
+    const override = await kv.get<string>(KEY_INVITE_CODE);
+    return c.json({ code: override ?? DEFAULT_INVITE_CODE, isDefault: !override });
   } catch (err) {
     console.log("Error in GET /admin/invite-code:", err);
     return c.json({ error: String(err) }, 500);
