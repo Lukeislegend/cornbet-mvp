@@ -218,8 +218,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // ── Auth state ────────────────────────────────────────────────────────────
   const [user,        setUser]        = useState<User | null>(null);
   const [session,     setSession]     = useState<Session | null>(null);
-  const [isLoading,   setIsLoading]   = useState(true);
-  const [authError,   setAuthError]   = useState<string | null>(null);
+  const [isLoading,       setIsLoading]       = useState(true);
+  // State (not ref) so clearLoading triggers re-renders — refs don't cause React to re-render
+  const [loadingComplete, setLoadingComplete] = useState(false);
+  const [authError,        setAuthError]       = useState<string | null>(null);
   const [dbError,     setDbError]     = useState<string | null>(null);
 
   // ── App data ──────────────────────────────────────────────────────────────
@@ -242,13 +244,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // could theoretically trigger the bootstrap flow.
   const bootstrappedRef = useRef(false);
 
-  // Once true, loading is DONE — never show spinner again until sign-out.
-  // Fixes race where setIsLoading(false) may not reliably update UI when
-  // SIGNED_IN fires after startup finally, or React batching quirks.
-  const loadingCompleteRef = useRef(false);
-
   const clearLoading = useCallback(() => {
-    loadingCompleteRef.current = true;
+    setLoadingComplete(true);
     setIsLoading(false);
   }, []);
 
@@ -530,7 +527,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // ── Signed out ──────────────────────────────────────────────────
           if (event === 'SIGNED_OUT') {
             bootstrappedRef.current = false;
-            loadingCompleteRef.current = false;
+            setLoadingComplete(false);
+            setIsLoading(false);
             lastRefreshAtRef.current = 0;
             tokenRef.current = publicAnonKey;
             setSession(null);
@@ -540,7 +538,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setGroupBankLocal(1000);
             setPlacedBets([]);
             setGameResults({});
-            clearLoading();
             return;
           }
 
@@ -875,9 +872,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetBets = useCallback(() => setPlacedBets([]), []);
 
-  // Once loadingCompleteRef is true, never show spinner — fixes race where
+  // Once loadingComplete is true, never show spinner — fixes race where
   // setIsLoading(false) is called but SIGNED_IN fires after and React batches oddly
-  const effectiveIsLoading = loadingCompleteRef.current ? false : isLoading;
+  const effectiveIsLoading = loadingComplete ? false : isLoading;
 
   return (
     <AppContext.Provider value={{
