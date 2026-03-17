@@ -242,6 +242,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // could theoretically trigger the bootstrap flow.
   const bootstrappedRef = useRef(false);
 
+  // Once true, loading is DONE — never show spinner again until sign-out.
+  // Fixes race where setIsLoading(false) may not reliably update UI when
+  // SIGNED_IN fires after startup finally, or React batching quirks.
+  const loadingCompleteRef = useRef(false);
+
+  const clearLoading = useCallback(() => {
+    loadingCompleteRef.current = true;
+    setIsLoading(false);
+  }, []);
+
   // ─── apiFetch — always uses the live session token ─────────────────────────
   //
   // getSession() reads from the Supabase client's in-memory / localStorage
@@ -499,9 +509,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       } catch (err) {
         console.error('CornBet: startup getSession() error:', err);
       } finally {
-        console.log('CornBet: finally block — setting isLoading false, mounted=', mounted);
-        if (mounted) setIsLoading(false);
-        console.log('CornBet: isLoading should now be false');
+        if (mounted) clearLoading();
       }
 
       // ── Step 2: subscribe to FUTURE auth changes only ─────────────────────
@@ -519,11 +527,10 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // Skip — initial session state was read by getSession() in Step 1.
           if (event === 'INITIAL_SESSION') return;
 
-          console.log('CornBet auth event:', event, newSession?.user?.email ?? 'no user');
-
           // ── Signed out ──────────────────────────────────────────────────
           if (event === 'SIGNED_OUT') {
             bootstrappedRef.current = false;
+            loadingCompleteRef.current = false;
             lastRefreshAtRef.current = 0;
             tokenRef.current = publicAnonKey;
             setSession(null);
@@ -533,7 +540,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setGroupBankLocal(1000);
             setPlacedBets([]);
             setGameResults({});
-            setIsLoading(false);
+            clearLoading();
             return;
           }
 
@@ -555,7 +562,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               console.log('CornBet: bootstrapping with autoRefreshed token…');
               bootstrappedRef.current = true;
               await bootstrapData(newSession.access_token);
-              if (mounted) setIsLoading(false);
+              if (mounted) clearLoading();
             }
             return;
           }
@@ -570,9 +577,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
               bootstrappedRef.current = true;
               await bootstrapData(newSession.access_token);
             }
-            // Always clear loading on SIGNED_IN (fixes race where startup
-            // finally ran first; second bootstrap skipped setIsLoading)
-            if (mounted) setIsLoading(false);
+            if (mounted) clearLoading();
           }
         }
       );
@@ -587,7 +592,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       mounted = false;
       subRef.current?.unsubscribe();
     };
-  }, [bootstrapData]);
+  }, [bootstrapData, clearLoading]);
 
   // ── Sign In ───────────────────────────────────────────────────────────────
   const signIn = useCallback(async (email: string, password: string) => {
@@ -870,9 +875,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   const resetBets = useCallback(() => setPlacedBets([]), []);
 
+  // Once loadingCompleteRef is true, never show spinner — fixes race where
+  // setIsLoading(false) is called but SIGNED_IN fires after and React batches oddly
+  const effectiveIsLoading = loadingCompleteRef.current ? false : isLoading;
+
   return (
     <AppContext.Provider value={{
-      user, session, isLoading, authError, dbError,
+      user, session, isLoading: effectiveIsLoading, authError, dbError,
       signIn, signUp, signOut,
       displayName, playWallet, groupBank, placedBets,
       setPlayWallet, setGroupBank,
