@@ -4,6 +4,7 @@ import { Eye, EyeOff, Mail, Lock, User, AlertCircle, CheckCircle } from 'lucide-
 import { MobileContainer } from './MobileContainer';
 import { Logo } from './Logo';
 import { useApp } from '../context/AppContext';
+import { router } from '../routes';
 
 // ─── Shared input field ───────────────────────────────────────────────────────
 
@@ -399,10 +400,10 @@ export function Login() {
   // swap out the Login screen for the router. We navigate via history push
   // so the router starts at the correct screen.
   const handleLoginSuccess = () => {
-    window.history.pushState({}, '', '/hub');
+    router.navigate('/hub');
   };
   const handleSignupSuccess = () => {
-    window.history.pushState({}, '', '/welcome');
+    router.navigate('/welcome');
   };
 
   return (
