@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, ChevronLeft } from 'lucide-react';
 import { useApp, calcPayout } from '../context/AppContext';
 import { GlossButton } from './GlossButton';
 
 interface BetSlipProps {
   isOpen: boolean;
   onClose: () => void;
+  onBack?: () => void;
   betType: string;
   selection: string;
   odds: string;
@@ -15,7 +16,7 @@ interface BetSlipProps {
   lineId: string;
 }
 
-export function BetSlip({ isOpen, onClose, betType, selection, odds, game, team, lineId }: BetSlipProps) {
+export function BetSlip({ isOpen, onClose, onBack, betType, selection, odds, game, team, lineId }: BetSlipProps) {
   const [stake, setStake] = useState('25');
   const [placing, setPlacing] = useState(false);
   const [betError, setBetError] = useState<string | null>(null);
@@ -86,9 +87,20 @@ export function BetSlip({ isOpen, onClose, betType, selection, odds, game, team,
 
               {/* Header */}
               <div className="flex items-center justify-between mb-5">
-                <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}>
-                  Bet Slip 🌽
-                </h2>
+                <div className="flex items-center gap-2">
+                  {onBack && (
+                    <button
+                      onClick={onBack}
+                      className="flex items-center justify-center rounded-full"
+                      style={{ width: '30px', height: '30px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }}
+                    >
+                      <ChevronLeft size={15} style={{ color: 'rgba(255,255,255,0.6)' }} />
+                    </button>
+                  )}
+                  <h2 style={{ fontSize: '20px', fontWeight: '700', color: 'white' }}>
+                    Bet Slip 🌽
+                  </h2>
+                </div>
                 <button onClick={onClose} style={{ color: 'rgba(255,255,255,0.5)', fontSize: '24px', lineHeight: 1 }}>×</button>
               </div>
 

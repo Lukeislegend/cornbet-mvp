@@ -392,42 +392,48 @@ function TeamBetSheet({ isOpen, onClose, team, options, onSelect }: TeamBetSheet
 
             {/* Options */}
             <div className="px-4 pb-8 space-y-2">
-              {options.map((opt, i) => (
-                <motion.button
-                  key={opt.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.06 }}
-                  onClick={() => onSelect(opt)}
-                  className="w-full flex items-center justify-between px-4 py-4 rounded-2xl active:scale-[0.98] transition-transform"
-                  style={{
-                    background: opt.type === 'futures'
-                      ? 'rgba(255,213,79,0.07)'
-                      : 'rgba(0,0,0,0.35)',
-                    border: `1px solid ${opt.type === 'futures' ? 'rgba(255,213,79,0.25)' : 'rgba(255,255,255,0.08)'}`,
-                  }}
-                >
-                  <div className="text-left">
-                    <p style={{ fontSize: '15px', fontWeight: '700', color: 'white', marginBottom: '3px' }}>
-                      {opt.label}
-                    </p>
-                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
-                      {opt.sublabel}
-                    </p>
-                  </div>
-                  <span
+              {options.map((opt, i) => {
+                const isPending = opt.odds === '—';
+                return (
+                  <motion.button
+                    key={opt.id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: i * 0.06 }}
+                    onClick={() => onSelect(opt)}
+                    disabled={isPending}
+                    className="w-full flex items-center justify-between px-4 py-4 rounded-2xl active:scale-[0.98] transition-transform"
                     style={{
-                      fontSize: '16px',
-                      fontWeight: '800',
-                      color: opt.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
-                      flexShrink: 0,
-                      marginLeft: '12px',
+                      background: opt.type === 'futures'
+                        ? 'rgba(255,213,79,0.07)'
+                        : 'rgba(0,0,0,0.35)',
+                      border: `1px solid ${opt.type === 'futures' ? 'rgba(255,213,79,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                      opacity: isPending ? 0.45 : 1,
+                      cursor: isPending ? 'default' : 'pointer',
                     }}
                   >
-                    {opt.odds}
-                  </span>
-                </motion.button>
-              ))}
+                    <div className="text-left">
+                      <p style={{ fontSize: '15px', fontWeight: '700', color: 'white', marginBottom: '3px' }}>
+                        {opt.label}
+                      </p>
+                      <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                        {opt.sublabel}
+                      </p>
+                    </div>
+                    <span
+                      style={{
+                        fontSize: '16px',
+                        fontWeight: '800',
+                        color: isPending ? 'rgba(255,255,255,0.3)' : opt.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
+                        flexShrink: 0,
+                        marginLeft: '12px',
+                      }}
+                    >
+                      {opt.odds}
+                    </span>
+                  </motion.button>
+                );
+              })}
 
               {options.length === 0 && (
                 <div className="text-center py-8">
@@ -727,7 +733,8 @@ export function BracketView() {
   const [bracket, setBracket]           = useState<BRegion[]>(BRACKET_DATA);
   const [finalFour, setFinalFour]       = useState<FinalFour>(FINAL_FOUR_DATA);
   const [apiLoading, setApiLoading]     = useState(true);
-  const [futureOdds, setFutureOdds]     = useState<Map<string, string>>(new Map());
+  // Map: teamName → [{odds, market}]
+  const [futureOdds, setFutureOdds]     = useState<Map<string, { odds: string; market: string }[]>>(new Map());
 
   // Team bet sheet state
   const [sheetTeam, setSheetTeam]       = useState<BTeam | null>(null);
@@ -760,19 +767,54 @@ export function BracketView() {
           }))
         );
       }
-      const map = new Map<string, string>();
+      const map = new Map<string, { odds: string; market: string }[]>();
       for (const t of (futuresRes.teams ?? [])) {
-        if (t.name && t.odds) map.set(t.name, t.odds);
+        if (!t.name || !t.odds || !t.market) continue;
+        const existing = map.get(t.name) ?? [];
+        existing.push({ odds: t.odds, market: t.market });
+        map.set(t.name, existing);
       }
       setFutureOdds(map);
       setApiLoading(false);
     })();
   }, []);
 
+  /** Derive tournament round from matchup ID (e.g. 's-r1-0' → 'Round of 64') */
+  const getMatchupRound = (id: string): string => {
+    if (id === 'ncg')  return 'Championship';
+    if (id.startsWith('ff')) return 'Final Four';
+    const rMatch = id.match(/r(\d+)-/);
+    if (!rMatch) return 'NCAA Tournament';
+    switch (rMatch[1]) {
+      case '1': return 'Round of 64';
+      case '2': return 'Round of 32';
+      case '3': return 'Sweet 16';
+      case '4': return 'Elite Eight';
+      default:  return 'NCAA Tournament';
+    }
+  };
+
+  /** Map market key → readable label */
+  const FUTURES_LABELS: Record<string, string> = {
+    championship:   'Win Championship 🏆',
+    south_region:   'Win South Region',
+    east_region:    'Win East Region',
+    midwest_region: 'Win Midwest Region',
+    west_region:    'Win West Region',
+  };
+  const FUTURES_SUBLABELS: Record<string, string> = {
+    championship:   'Futures · NCAA Tournament Winner',
+    south_region:   'Futures · Regional Winner',
+    east_region:    'Futures · Regional Winner',
+    midwest_region: 'Futures · Regional Winner',
+    west_region:    'Futures · Regional Winner',
+  };
+
   // Build and open the team options sheet
   const handleTeamClick = (team: BTeam, matchup: BMatchup) => {
     const options: BetOption[] = [];
     const opponent = matchup.team1?.name === team.name ? matchup.team2 : matchup.team1;
+    const round = getMatchupRound(matchup.id);
 
     // Option 1: Win this matchup (moneyline)
     if (opponent && matchup.mlOdds) {
@@ -781,32 +823,33 @@ export function BracketView() {
       options.push({
         id: `ml-${matchup.id}`,
         label: `Beat ${opponent.name}`,
-        sublabel: 'Moneyline · This game',
+        sublabel: `Moneyline · ${round}`,
         odds: ml,
         type: 'matchup',
       });
     } else if (opponent) {
-      // No live odds — still show the option so users know it exists
       options.push({
         id: `ml-${matchup.id}`,
         label: `Beat ${opponent.name}`,
-        sublabel: 'Moneyline · Odds unavailable',
-        odds: '-110',
+        sublabel: `Moneyline · ${round} · Odds pending`,
+        odds: '—',
         type: 'matchup',
       });
     }
 
-    // Option 2: Win championship (futures)
-    const futKey = [...futureOdds.keys()].find(k => teamsMatch(k, team.name));
-    const futOdds = futKey ? futureOdds.get(futKey) : undefined;
-    if (futOdds) {
-      options.push({
-        id: `future-${team.name}`,
-        label: 'Win Championship 🏆',
-        sublabel: 'Futures · NCAA Tournament Winner',
-        odds: futOdds,
-        type: 'futures',
-      });
+    // Options 2+: All available futures for this team
+    const futEntry = [...futureOdds.entries()].find(([k]) => teamsMatch(k, team.name));
+    if (futEntry) {
+      const [, markets] = futEntry;
+      for (const { odds, market } of markets) {
+        options.push({
+          id: `future-${market}-${team.name}`,
+          label: FUTURES_LABELS[market] ?? market,
+          sublabel: FUTURES_SUBLABELS[market] ?? 'Futures',
+          odds,
+          type: 'futures',
+        });
+      }
     }
 
     setSheetTeam(team);
@@ -817,17 +860,18 @@ export function BracketView() {
   // When user picks an option from the sheet
   const handleOptionSelect = (opt: BetOption) => {
     if (!sheetTeam) return;
+    // Don't open if no real odds
+    if (opt.odds === '—') return;
     setSheetOpen(false);
 
-    const opponent = sheetOptions.find(o => o.id !== opt.id && o.type === 'matchup');
     const gameLabel = opt.type === 'futures'
-      ? 'NCAA Championship Winner'
+      ? opt.label.replace(' 🏆', '')
       : opt.label.replace('Beat ', `${sheetTeam.name} vs `);
 
     setActiveBet({
       type: opt.type === 'futures' ? 'Futures' : 'Moneyline',
       selection: opt.type === 'futures'
-        ? `${sheetTeam.name} — Championship Winner`
+        ? `${sheetTeam.name} — ${opt.label.replace(' 🏆', '')}`
         : `${sheetTeam.name} ML`,
       odds: opt.odds,
       game: gameLabel,
@@ -835,6 +879,12 @@ export function BracketView() {
       lineId: opt.id,
     });
     setBetSlipOpen(true);
+  };
+
+  // Back from BetSlip → reopen the team sheet
+  const handleBetSlipBack = () => {
+    setBetSlipOpen(false);
+    setSheetOpen(true);
   };
 
   const liveCount = bracket.reduce((acc, r) =>
@@ -968,6 +1018,7 @@ export function BracketView() {
         <BetSlip
           isOpen={betSlipOpen}
           onClose={() => setBetSlipOpen(false)}
+          onBack={handleBetSlipBack}
           betType={activeBet.type}
           selection={activeBet.selection}
           odds={activeBet.odds}

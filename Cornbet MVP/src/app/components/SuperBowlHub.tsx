@@ -28,6 +28,7 @@ interface GameData {
   home: string;
   away: string;
   time: string;
+  round?: string;
   lines: BettingLine[];
 }
 
@@ -420,6 +421,26 @@ export function SuperBowlHub() {
                           className="px-4 py-3 rounded-t-xl"
                           style={{ background: '#1A1600', border: '1px solid rgba(255,213,79,0.12)', borderBottom: 'none' }}
                         >
+                          {/* Round badge */}
+                          {game.round && (
+                            <div className="flex justify-center mb-2">
+                              <span
+                                style={{
+                                  fontSize: '9px',
+                                  fontWeight: '700',
+                                  letterSpacing: '0.8px',
+                                  textTransform: 'uppercase',
+                                  color: '#FFB300',
+                                  background: 'rgba(255,179,0,0.12)',
+                                  border: '1px solid rgba(255,179,0,0.25)',
+                                  borderRadius: '20px',
+                                  padding: '2px 8px',
+                                }}
+                              >
+                                {game.round}
+                              </span>
+                            </div>
+                          )}
                           <div className="flex justify-between items-start">
                             <div>
                               <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '10px', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '3px' }}>

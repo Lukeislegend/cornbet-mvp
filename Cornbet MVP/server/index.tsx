@@ -1389,6 +1389,7 @@ app.get(`${PREFIX}/ncaab-odds`, async (c) => {
         home: event.home_team,
         away: event.away_team,
         time: formatGameTime(new Date(event.commence_time)),
+        round: getTournamentRound(new Date(event.commence_time)),
         lines,
       };
     });
@@ -1410,41 +1411,53 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
     const apiKey = Deno.env.get("ODDS_API_KEY");
     if (!apiKey) return c.json({ teams: [] });
 
-    const url = new URL(
-      "https://api.the-odds-api.com/v4/sports/basketball_ncaab_championship_winner/odds"
+    // All futures markets to try — gracefully handles 404s for unavailable markets
+    const FUTURE_MARKETS = [
+      { sportKey: "basketball_ncaab_championship_winner", market: "championship", label: "Win Championship 🏆" },
+      { sportKey: "basketball_ncaab_south_region_winner",   market: "south_region",   label: "Win South Region" },
+      { sportKey: "basketball_ncaab_east_region_winner",    market: "east_region",    label: "Win East Region" },
+      { sportKey: "basketball_ncaab_midwest_region_winner", market: "midwest_region", label: "Win Midwest Region" },
+      { sportKey: "basketball_ncaab_west_region_winner",    market: "west_region",    label: "Win West Region" },
+    ];
+
+    const fetchMarket = async (sportKey: string, market: string) => {
+      try {
+        const url = new URL(`https://api.the-odds-api.com/v4/sports/${sportKey}/odds`);
+        url.searchParams.set("apiKey",     apiKey);
+        url.searchParams.set("regions",    "us");
+        url.searchParams.set("markets",    "outrights");
+        url.searchParams.set("oddsFormat", "american");
+        const res = await fetch(url.toString());
+        if (!res.ok) return [];
+        const raw: any[] = await res.json();
+        if (!Array.isArray(raw)) return [];
+        const entries: { name: string; odds: string; market: string }[] = [];
+        const seen = new Set<string>();
+        for (const event of raw) {
+          const bm = event.bookmakers?.find((b: any) =>
+            b.markets?.some((m: any) => m.key === "outrights")
+          ) ?? event.bookmakers?.[0];
+          const mkt = bm?.markets?.find((m: any) => m.key === "outrights");
+          for (const o of mkt?.outcomes ?? []) {
+            if (seen.has(o.name)) continue;
+            seen.add(o.name);
+            entries.push({ name: o.name, odds: formatAmerican(o.price), market });
+          }
+        }
+        return entries;
+      } catch { return []; }
+    };
+
+    const results = await Promise.all(
+      FUTURE_MARKETS.map(({ sportKey, market }) => fetchMarket(sportKey, market))
     );
-    url.searchParams.set("apiKey",     apiKey);
-    url.searchParams.set("regions",    "us");
-    url.searchParams.set("markets",    "outrights");
-    url.searchParams.set("oddsFormat", "american");
 
-    const res = await fetch(url.toString());
-    if (!res.ok) {
-      console.log(`ncaab-futures API error: ${res.status} ${await res.text()}`);
-      return c.json({ teams: [] });
-    }
-
-    const raw: any[] = await res.json();
-    const teams: { name: string; odds: string }[] = [];
-    const seen = new Set<string>();
-
-    for (const event of raw) {
-      const bm = event.bookmakers?.find((b: any) =>
-        b.markets?.some((m: any) => m.key === "outrights")
-      ) ?? event.bookmakers?.[0];
-      const market = bm?.markets?.find((m: any) => m.key === "outrights");
-      for (const o of market?.outcomes ?? []) {
-        if (seen.has(o.name)) continue;
-        seen.add(o.name);
-        teams.push({ name: o.name, odds: formatAmerican(o.price) });
-      }
-    }
-
+    const teams = results.flat();
     teams.sort((a, b) =>
       parseInt(a.odds.replace("+", "")) - parseInt(b.odds.replace("+", ""))
     );
 
-    console.log(`ncaab-futures: ${teams.length} teams`);
+    console.log(`ncaab-futures: ${teams.length} total entries`);
     return c.json({ teams });
   } catch (err) {
     console.log("Error in GET /ncaab-futures:", err);
@@ -1465,6 +1478,24 @@ function americanToDecimal(odds: string): number {
 /** Calculate expected payout from stake and combined odds string */
 function calcExpectedPayout(stake: number, combinedOdds: string): number {
   return Math.round(stake * americanToDecimal(combinedOdds) * 100) / 100;
+}
+
+/** Map a game date to its NCAA Tournament round label */
+function getTournamentRound(d: Date): string {
+  const m = d.getUTCMonth() + 1; // 1-indexed
+  const day = d.getUTCDate();
+  if (m === 3) {
+    if (day <= 19) return 'First Four';
+    if (day <= 21) return 'Round of 64';
+    if (day <= 23) return 'Round of 32';
+    if (day <= 28) return 'Sweet 16';
+    if (day <= 30) return 'Elite Eight';
+  }
+  if (m === 4) {
+    if (day <= 5) return 'Final Four';
+    if (day <= 7) return 'Championship';
+  }
+  return 'NCAA Tournament';
 }
 
 function formatAmerican(price: number): string {
