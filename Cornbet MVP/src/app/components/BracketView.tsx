@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Link } from 'react-router';
-import { ChevronLeft, Trophy, Zap } from 'lucide-react';
+import { ChevronLeft, Trophy, Zap, X } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { BetSlip } from './BetSlip';
@@ -321,16 +321,137 @@ function ConnectorLines({ round, count }: { round: number; count: number }) {
   );
 }
 
+// ─── Team Bet Sheet ───────────────────────────────────────────────────────────
+
+interface BetOption {
+  id: string;
+  label: string;
+  sublabel: string;
+  odds: string;
+  type: 'matchup' | 'futures';
+}
+
+interface TeamBetSheetProps {
+  isOpen: boolean;
+  onClose: () => void;
+  team: BTeam;
+  options: BetOption[];
+  onSelect: (opt: BetOption) => void;
+}
+
+function TeamBetSheet({ isOpen, onClose, team, options, onSelect }: TeamBetSheetProps) {
+  return (
+    <AnimatePresence>
+      {isOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={onClose}
+            className="fixed inset-0 z-40"
+            style={{ background: 'rgba(0,0,0,0.75)' }}
+          />
+          <motion.div
+            initial={{ y: '100%' }}
+            animate={{ y: 0 }}
+            exit={{ y: '100%' }}
+            transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+            style={{
+              background: '#1A1600',
+              maxWidth: '393px',
+              margin: '0 auto',
+              border: '1px solid rgba(255,213,79,0.2)',
+              borderBottom: 'none',
+            }}
+          >
+            {/* Handle */}
+            <div className="flex justify-center pt-4 pb-2">
+              <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,213,79,0.2)' }} />
+            </div>
+
+            {/* Header */}
+            <div className="flex items-center justify-between px-5 pb-4">
+              <div>
+                <p style={{ fontSize: '11px', fontWeight: '600', color: 'rgba(255,213,79,0.5)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '2px' }}>
+                  Seed #{team.seed}
+                </p>
+                <h2 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>
+                  {team.name}
+                </h2>
+              </div>
+              <button
+                onClick={onClose}
+                className="flex items-center justify-center rounded-full"
+                style={{ width: '32px', height: '32px', background: 'rgba(255,255,255,0.08)', flexShrink: 0 }}
+              >
+                <X size={15} style={{ color: 'rgba(255,255,255,0.5)' }} />
+              </button>
+            </div>
+
+            {/* Options */}
+            <div className="px-4 pb-8 space-y-2">
+              {options.map((opt, i) => (
+                <motion.button
+                  key={opt.id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.06 }}
+                  onClick={() => onSelect(opt)}
+                  className="w-full flex items-center justify-between px-4 py-4 rounded-2xl active:scale-[0.98] transition-transform"
+                  style={{
+                    background: opt.type === 'futures'
+                      ? 'rgba(255,213,79,0.07)'
+                      : 'rgba(0,0,0,0.35)',
+                    border: `1px solid ${opt.type === 'futures' ? 'rgba(255,213,79,0.25)' : 'rgba(255,255,255,0.08)'}`,
+                  }}
+                >
+                  <div className="text-left">
+                    <p style={{ fontSize: '15px', fontWeight: '700', color: 'white', marginBottom: '3px' }}>
+                      {opt.label}
+                    </p>
+                    <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.4)' }}>
+                      {opt.sublabel}
+                    </p>
+                  </div>
+                  <span
+                    style={{
+                      fontSize: '16px',
+                      fontWeight: '800',
+                      color: opt.odds.startsWith('+') ? '#66BB6A' : '#FFD54F',
+                      flexShrink: 0,
+                      marginLeft: '12px',
+                    }}
+                  >
+                    {opt.odds}
+                  </span>
+                </motion.button>
+              ))}
+
+              {options.length === 0 && (
+                <div className="text-center py-8">
+                  <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '13px' }}>
+                    No odds available yet for this team
+                  </p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
+  );
+}
+
 // ─── Matchup Card ─────────────────────────────────────────────────────────────
 
 interface CardProps {
   matchup: BMatchup;
-  onBet: (matchup: BMatchup, team: 'team1' | 'team2') => void;
-  futureOdds?: Map<string, string>;
-  onFuture?: (team: BTeam, odds: string) => void;
+  onTeamClick: (team: BTeam, matchup: BMatchup) => void;
 }
 
-function MatchupCard({ matchup, onBet, futureOdds, onFuture }: CardProps) {
+function MatchupCard({ matchup, onTeamClick }: CardProps) {
   const hasBothTeams = matchup.team1 && matchup.team2;
   const hasOdds = !!matchup.mlOdds;
 
@@ -344,7 +465,7 @@ function MatchupCard({ matchup, onBet, futureOdds, onFuture }: CardProps) {
       <div
         key={side}
         className="flex items-center justify-between px-2 h-[27px] gap-1 cursor-pointer active:opacity-70 transition-opacity"
-        onClick={() => team && hasBothTeams && onBet(matchup, side)}
+        onClick={() => team && hasBothTeams && onTeamClick(team, matchup)}
       >
         <div className="flex items-center gap-1.5 min-w-0">
           {team ? (
@@ -372,7 +493,7 @@ function MatchupCard({ matchup, onBet, futureOdds, onFuture }: CardProps) {
                   overflow: 'hidden',
                   whiteSpace: 'nowrap',
                   textOverflow: 'ellipsis',
-                  maxWidth: '80px',
+                  maxWidth: '95px',
                 }}
               >
                 {team.name}
@@ -411,30 +532,6 @@ function MatchupCard({ matchup, onBet, futureOdds, onFuture }: CardProps) {
             {team.score}
           </span>
         )}
-        {/* Futures button — only if this team has championship odds */}
-        {team && futureOdds && (() => {
-          const key = [...futureOdds.keys()].find(k => teamsMatch(k, team.name));
-          const fOdds = key ? futureOdds.get(key) : undefined;
-          return fOdds ? (
-            <button
-              onClick={e => { e.stopPropagation(); onFuture?.(team, fOdds); }}
-              title={`${team.name} to win it all (${fOdds})`}
-              style={{
-                flexShrink: 0,
-                fontSize: '9px',
-                background: 'rgba(255,179,0,0.15)',
-                border: '1px solid rgba(255,213,79,0.3)',
-                borderRadius: '3px',
-                color: '#FFD54F',
-                padding: '1px 3px',
-                lineHeight: 1,
-                cursor: 'pointer',
-              }}
-            >
-              🏆
-            </button>
-          ) : null;
-        })()}
       </div>
     );
   };
@@ -501,12 +598,10 @@ const ROUND_LABELS = ['Round of 64', 'Round of 32', 'Sweet 16', 'Elite 8'];
 
 interface RegionalProps {
   region: BRegion;
-  onBet: (m: BMatchup, t: 'team1' | 'team2') => void;
-  futureOdds?: Map<string, string>;
-  onFuture?: (team: BTeam, odds: string) => void;
+  onTeamClick: (team: BTeam, matchup: BMatchup) => void;
 }
 
-function RegionalBracket({ region, onBet, futureOdds, onFuture }: RegionalProps) {
+function RegionalBracket({ region, onTeamClick }: RegionalProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
 
   return (
@@ -571,7 +666,7 @@ function RegionalBracket({ region, onBet, futureOdds, onFuture }: RegionalProps)
                   left: COL_LEFT[ri],
                 }}
               >
-                <MatchupCard matchup={matchup} onBet={onBet} futureOdds={futureOdds} onFuture={onFuture} />
+                <MatchupCard matchup={matchup} onTeamClick={onTeamClick} />
               </motion.div>
             );
           })
@@ -583,7 +678,7 @@ function RegionalBracket({ region, onBet, futureOdds, onFuture }: RegionalProps)
 
 // ─── Final Four View ──────────────────────────────────────────────────────────
 
-function FinalFourView({ data, onBet, futureOdds, onFuture }: { data: FinalFour; onBet: (m: BMatchup, t: 'team1' | 'team2') => void; futureOdds?: Map<string, string>; onFuture?: (team: BTeam, odds: string) => void }) {
+function FinalFourView({ data, onTeamClick }: { data: FinalFour; onTeamClick: (team: BTeam, matchup: BMatchup) => void }) {
   const SEMI_W = CARD_W;
   const CHAMP_W = CARD_W + 20;
   const ROW_H  = CARD_H;
@@ -601,7 +696,7 @@ function FinalFourView({ data, onBet, futureOdds, onFuture }: { data: FinalFour;
             <p style={{ fontSize: '8px', fontWeight: '700', color: 'rgba(255,213,79,0.4)', letterSpacing: '0.5px', textTransform: 'uppercase', marginBottom: '6px', textAlign: 'center' }}>
               {label}
             </p>
-            <MatchupCard matchup={m} onBet={onBet} futureOdds={futureOdds} onFuture={onFuture} />
+            <MatchupCard matchup={m} onTeamClick={onTeamClick} />
           </div>
         ))}
       </div>
@@ -612,7 +707,7 @@ function FinalFourView({ data, onBet, futureOdds, onFuture }: { data: FinalFour;
           🏆 National Championship · Apr 7
         </p>
         <div style={{ width: CHAMP_W }}>
-          <MatchupCard matchup={data.championship} onBet={onBet} futureOdds={futureOdds} onFuture={onFuture} />
+          <MatchupCard matchup={data.championship} onTeamClick={onTeamClick} />
         </div>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.3)', marginTop: '10px', textAlign: 'center', lineHeight: '1.5' }}>
           Regional champions advance here.{'\n'}Games unlock as bracket progresses.
@@ -632,16 +727,18 @@ export function BracketView() {
   const [bracket, setBracket]           = useState<BRegion[]>(BRACKET_DATA);
   const [finalFour, setFinalFour]       = useState<FinalFour>(FINAL_FOUR_DATA);
   const [apiLoading, setApiLoading]     = useState(true);
+  const [futureOdds, setFutureOdds]     = useState<Map<string, string>>(new Map());
 
-  // Game bet slip state
+  // Team bet sheet state
+  const [sheetTeam, setSheetTeam]       = useState<BTeam | null>(null);
+  const [sheetOptions, setSheetOptions] = useState<BetOption[]>([]);
+  const [sheetOpen, setSheetOpen]       = useState(false);
+
+  // Bet slip state (opened from sheet selection)
   const [betSlipOpen, setBetSlipOpen]   = useState(false);
-  const [selectedMatchup, setSelectedMatchup] = useState<BMatchup | null>(null);
-  const [selectedTeamSide, setSelectedTeamSide] = useState<'team1' | 'team2'>('team1');
-
-  // Futures bet slip state
-  const [futureOdds, setFutureOdds]         = useState<Map<string, string>>(new Map());
-  const [futureSlipOpen, setFutureSlipOpen] = useState(false);
-  const [selectedFuture, setSelectedFuture] = useState<{ team: BTeam; odds: string } | null>(null);
+  const [activeBet, setActiveBet]       = useState<{
+    type: string; selection: string; odds: string; game: string; team: string; lineId: string;
+  } | null>(null);
 
   // Load API odds + futures
   useEffect(() => {
@@ -672,28 +769,73 @@ export function BracketView() {
     })();
   }, []);
 
-  const handleFuture = (team: BTeam, odds: string) => {
-    setSelectedFuture({ team, odds });
-    setFutureSlipOpen(true);
+  // Build and open the team options sheet
+  const handleTeamClick = (team: BTeam, matchup: BMatchup) => {
+    const options: BetOption[] = [];
+    const opponent = matchup.team1?.name === team.name ? matchup.team2 : matchup.team1;
+
+    // Option 1: Win this matchup (moneyline)
+    if (opponent && matchup.mlOdds) {
+      const side = matchup.team1?.name === team.name ? 'team1' : 'team2';
+      const ml = side === 'team1' ? matchup.mlOdds.t1 : matchup.mlOdds.t2;
+      options.push({
+        id: `ml-${matchup.id}`,
+        label: `Beat ${opponent.name}`,
+        sublabel: 'Moneyline · This game',
+        odds: ml,
+        type: 'matchup',
+      });
+    } else if (opponent) {
+      // No live odds — still show the option so users know it exists
+      options.push({
+        id: `ml-${matchup.id}`,
+        label: `Beat ${opponent.name}`,
+        sublabel: 'Moneyline · Odds unavailable',
+        odds: '-110',
+        type: 'matchup',
+      });
+    }
+
+    // Option 2: Win championship (futures)
+    const futKey = [...futureOdds.keys()].find(k => teamsMatch(k, team.name));
+    const futOdds = futKey ? futureOdds.get(futKey) : undefined;
+    if (futOdds) {
+      options.push({
+        id: `future-${team.name}`,
+        label: 'Win Championship 🏆',
+        sublabel: 'Futures · NCAA Tournament Winner',
+        odds: futOdds,
+        type: 'futures',
+      });
+    }
+
+    setSheetTeam(team);
+    setSheetOptions(options);
+    setSheetOpen(true);
   };
 
-  const handleBet = (matchup: BMatchup, teamSide: 'team1' | 'team2') => {
-    if (!matchup.team1 || !matchup.team2) return;
-    setSelectedMatchup(matchup);
-    setSelectedTeamSide(teamSide);
+  // When user picks an option from the sheet
+  const handleOptionSelect = (opt: BetOption) => {
+    if (!sheetTeam) return;
+    setSheetOpen(false);
+
+    const opponent = sheetOptions.find(o => o.id !== opt.id && o.type === 'matchup');
+    const gameLabel = opt.type === 'futures'
+      ? 'NCAA Championship Winner'
+      : opt.label.replace('Beat ', `${sheetTeam.name} vs `);
+
+    setActiveBet({
+      type: opt.type === 'futures' ? 'Futures' : 'Moneyline',
+      selection: opt.type === 'futures'
+        ? `${sheetTeam.name} — Championship Winner`
+        : `${sheetTeam.name} ML`,
+      odds: opt.odds,
+      game: gameLabel,
+      team: sheetTeam.name,
+      lineId: opt.id,
+    });
     setBetSlipOpen(true);
   };
-
-  // Build bet slip props from selected matchup
-  const betTeam  = selectedMatchup?.[selectedTeamSide];
-  const otherSide: 'team1' | 'team2' = selectedTeamSide === 'team1' ? 'team2' : 'team1';
-  const otherTeam = selectedMatchup?.[otherSide];
-  const rawOdds  = selectedMatchup?.mlOdds
-    ? (selectedTeamSide === 'team1' ? selectedMatchup.mlOdds.t1 : selectedMatchup.mlOdds.t2)
-    : '-110';
-  const gameLabel = betTeam && otherTeam
-    ? `${betTeam.name} vs ${otherTeam.name}`
-    : 'Bracket Game';
 
   const liveCount = bracket.reduce((acc, r) =>
     acc + r.rounds[0].filter(m => m.mlOdds).length, 0
@@ -785,13 +927,13 @@ export function BracketView() {
 
                 {/* Hint for tapping */}
                 <p style={{ fontSize: '10px', color: 'rgba(255,213,79,0.45)', paddingLeft: '8px', marginBottom: '10px' }}>
-                  ⚡ Tap a team to place a bet
+                  ⚡ Tap a team to see betting options
                 </p>
 
                 {(() => {
                   const region = bracket.find(r => r.name === activeRegion);
                   return region
-                    ? <RegionalBracket region={region} onBet={handleBet} futureOdds={futureOdds} onFuture={handleFuture} />
+                    ? <RegionalBracket region={region} onTeamClick={handleTeamClick} />
                     : null;
                 })()}
               </motion.div>
@@ -803,38 +945,35 @@ export function BracketView() {
                 exit={{ opacity: 0, x: -20 }}
                 transition={{ duration: 0.18 }}
               >
-                <FinalFourView data={finalFour} onBet={handleBet} futureOdds={futureOdds} onFuture={handleFuture} />
+                <FinalFourView data={finalFour} onTeamClick={handleTeamClick} />
               </motion.div>
             )}
           </AnimatePresence>
         </div>
       </div>
 
-      {/* Game Bet Slip */}
-      {selectedMatchup?.team1 && selectedMatchup?.team2 && (
-        <BetSlip
-          isOpen={betSlipOpen}
-          onClose={() => setBetSlipOpen(false)}
-          betType="Moneyline"
-          selection={`${betTeam?.name} ML`}
-          odds={rawOdds}
-          game={gameLabel}
-          team={betTeam?.name ?? ''}
-          lineId={`${selectedMatchup.id}-${selectedTeamSide}`}
+      {/* Team Bet Options Sheet */}
+      {sheetTeam && (
+        <TeamBetSheet
+          isOpen={sheetOpen}
+          onClose={() => setSheetOpen(false)}
+          team={sheetTeam}
+          options={sheetOptions}
+          onSelect={handleOptionSelect}
         />
       )}
 
-      {/* Futures Bet Slip */}
-      {selectedFuture && (
+      {/* Bet Slip (opened from sheet) */}
+      {activeBet && (
         <BetSlip
-          isOpen={futureSlipOpen}
-          onClose={() => setFutureSlipOpen(false)}
-          betType="Futures"
-          selection={`${selectedFuture.team.name} — Championship Winner`}
-          odds={selectedFuture.odds}
-          game="NCAA Championship Winner"
-          team={selectedFuture.team.name}
-          lineId={`future-${selectedFuture.team.name.replace(/\s+/g, '-').toLowerCase()}`}
+          isOpen={betSlipOpen}
+          onClose={() => setBetSlipOpen(false)}
+          betType={activeBet.type}
+          selection={activeBet.selection}
+          odds={activeBet.odds}
+          game={activeBet.game}
+          team={activeBet.team}
+          lineId={activeBet.lineId}
         />
       )}
     </MobileContainer>
