@@ -413,10 +413,7 @@ function MatchupCard({ matchup, onBet, futureOdds, onFuture }: CardProps) {
         )}
         {/* Futures button — only if this team has championship odds */}
         {team && futureOdds && (() => {
-          const key = [...futureOdds.keys()].find(k =>
-            k.toLowerCase().includes(team.name.toLowerCase()) ||
-            team.name.toLowerCase().includes(k.toLowerCase())
-          );
+          const key = [...futureOdds.keys()].find(k => teamsMatch(k, team.name));
           const fOdds = key ? futureOdds.get(key) : undefined;
           return fOdds ? (
             <button

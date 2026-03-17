@@ -547,6 +547,15 @@ app.get(`${PREFIX}/player-balance`, async (c) => {
       }
     }
 
+    // Always ensure user is in the registry (handles accounts that bypassed signup endpoint)
+    if (displayName) {
+      const registry = await readRegistry();
+      if (!registry[userId]) {
+        await addToRegistry(userId, displayName);
+        console.log(`Auto-registered userId=${userId} in registry with name "${displayName}"`);
+      }
+    }
+
     console.log(`GET /player-balance userId=${userId} → $${balance} name="${displayName}"`);
     return c.json({ balance, displayName });
   } catch (err) {

@@ -10,7 +10,7 @@ import { Leaderboard } from './Leaderboard';
 import { FuturesBettingTab } from './FuturesBettingTab';
 import { useApp } from '../context/AppContext';
 import type { BetLeg } from '../context/AppContext';
-import { TrendingUp, ListOrdered, Layers, RefreshCw, Wifi, WifiOff, GitBranch } from 'lucide-react';
+import { TrendingUp, ListOrdered, Layers, RefreshCw, Wifi, WifiOff, ChevronRight } from 'lucide-react';
 import { publicAnonKey } from '@supabase/info';
 import { API_BASE } from '../lib/apiBase';
 
@@ -230,8 +230,8 @@ export function SuperBowlHub() {
                 transition={{ duration: 0.2 }}
                 className="px-5 py-5"
               >
-                {/* Header Row */}
-                <div className="flex items-center justify-between mb-3">
+                {/* Header Row — title + refresh only */}
+                <div className="flex items-center justify-between mb-4">
                   <div>
                     <h1 style={{ fontSize: '22px', fontWeight: '800', color: 'white' }}>
                       March Madness 🏀
@@ -240,7 +240,6 @@ export function SuperBowlHub() {
                       <p style={{ color: 'rgba(255,255,255,0.45)', fontSize: '13px' }}>
                         NCAA Men's Basketball · 2026
                       </p>
-                      {/* Live / Offline badge */}
                       <div
                         className="flex items-center gap-1 px-2 py-0.5 rounded-full"
                         style={{
@@ -248,60 +247,75 @@ export function SuperBowlHub() {
                           border: `1px solid ${isLive ? 'rgba(102,187,106,0.3)' : 'rgba(255,255,255,0.1)'}`,
                         }}
                       >
-                        {isLive
-                          ? <Wifi size={9} style={{ color: '#66BB6A' }} />
-                          : <WifiOff size={9} style={{ color: 'rgba(255,255,255,0.3)' }} />}
+                        {isLive ? <Wifi size={9} style={{ color: '#66BB6A' }} /> : <WifiOff size={9} style={{ color: 'rgba(255,255,255,0.3)' }} />}
                         <span style={{ fontSize: '9px', fontWeight: '700', color: isLive ? '#66BB6A' : 'rgba(255,255,255,0.3)', letterSpacing: '0.5px', textTransform: 'uppercase' }}>
                           {isLive ? 'Live' : 'Sample'}
                         </span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    {/* Refresh button */}
-                    <button
-                      onClick={loadOdds}
-                      disabled={oddsLoading}
-                      className="flex items-center justify-center rounded-full transition-all active:scale-90"
-                      style={{ width: '30px', height: '30px', background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,179,0,0.2)' }}
+                  <button
+                    onClick={loadOdds}
+                    disabled={oddsLoading}
+                    className="flex items-center justify-center rounded-full transition-all active:scale-90"
+                    style={{ width: '34px', height: '34px', background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,179,0,0.2)' }}
+                  >
+                    <motion.div
+                      animate={oddsLoading ? { rotate: 360 } : { rotate: 0 }}
+                      transition={oddsLoading ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : {}}
                     >
-                      <motion.div
-                        animate={oddsLoading ? { rotate: 360 } : { rotate: 0 }}
-                        transition={oddsLoading ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : {}}
-                      >
-                        <RefreshCw size={13} style={{ color: '#FFB300' }} />
-                      </motion.div>
-                    </button>
-                    <Link to="/bracket">
-                      <div
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-                        style={{ background: 'rgba(255,213,79,0.1)', border: '1px solid rgba(255,213,79,0.25)' }}
-                      >
-                        <GitBranch size={13} style={{ color: '#FFD54F' }} />
-                        <span style={{ color: '#FFD54F', fontSize: '12px', fontWeight: '700' }}>Bracket</span>
-                      </div>
-                    </Link>
-                    <Link to="/my-bets">
-                      <div
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-                        style={{ background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,179,0,0.2)' }}
-                      >
-                        <ListOrdered size={13} style={{ color: '#FFB300' }} />
-                        <span style={{ color: '#FFB300', fontSize: '12px', fontWeight: '600' }}>
-                          My Bets{pendingCount > 0 && ` (${pendingCount})`}
-                        </span>
-                      </div>
-                    </Link>
-                    <Link to="/performance">
-                      <div
-                        className="flex items-center gap-1 px-3 py-1.5 rounded-xl"
-                        style={{ background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,179,0,0.2)' }}
-                      >
-                        <TrendingUp size={13} style={{ color: '#FFB300' }} />
-                        <span style={{ color: '#FFB300', fontSize: '12px', fontWeight: '600' }}>Stats</span>
-                      </div>
-                    </Link>
-                  </div>
+                      <RefreshCw size={14} style={{ color: '#FFB300' }} />
+                    </motion.div>
+                  </button>
+                </div>
+
+                {/* Bracket Hero Banner */}
+                <Link to="/bracket">
+                  <motion.div
+                    whileTap={{ scale: 0.98 }}
+                    className="flex items-center justify-between mb-4 px-4 py-4 rounded-2xl"
+                    style={{
+                      background: 'linear-gradient(135deg, rgba(255,179,0,0.18) 0%, rgba(255,213,79,0.08) 100%)',
+                      border: '1px solid rgba(255,213,79,0.35)',
+                    }}
+                  >
+                    <div>
+                      <p style={{ fontSize: '10px', fontWeight: '700', letterSpacing: '1px', textTransform: 'uppercase', color: 'rgba(255,213,79,0.6)', marginBottom: '2px' }}>
+                        NCAA Tournament 2026
+                      </p>
+                      <p style={{ fontSize: '18px', fontWeight: '800', color: '#FFD54F' }}>
+                        🏆 Tournament Bracket
+                      </p>
+                      <p style={{ fontSize: '12px', color: 'rgba(255,255,255,0.5)', marginTop: '2px' }}>
+                        Bet on matchups · Buy futures
+                      </p>
+                    </div>
+                    <ChevronRight size={22} style={{ color: '#FFB300', flexShrink: 0 }} />
+                  </motion.div>
+                </Link>
+
+                {/* Quick links — My Bets + Stats */}
+                <div className="grid grid-cols-2 gap-2 mb-5">
+                  <Link to="/my-bets">
+                    <div
+                      className="flex items-center gap-2 px-3 py-3 rounded-xl"
+                      style={{ background: 'rgba(255,179,0,0.07)', border: '1px solid rgba(255,179,0,0.18)' }}
+                    >
+                      <ListOrdered size={15} style={{ color: '#FFB300', flexShrink: 0 }} />
+                      <span style={{ color: '#FFB300', fontSize: '13px', fontWeight: '600' }}>
+                        My Bets{pendingCount > 0 ? ` (${pendingCount})` : ''}
+                      </span>
+                    </div>
+                  </Link>
+                  <Link to="/performance">
+                    <div
+                      className="flex items-center gap-2 px-3 py-3 rounded-xl"
+                      style={{ background: 'rgba(255,179,0,0.07)', border: '1px solid rgba(255,179,0,0.18)' }}
+                    >
+                      <TrendingUp size={15} style={{ color: '#FFB300', flexShrink: 0 }} />
+                      <span style={{ color: '#FFB300', fontSize: '13px', fontWeight: '600' }}>Stats</span>
+                    </div>
+                  </Link>
                 </div>
 
                 {/* Offline / error notice */}
