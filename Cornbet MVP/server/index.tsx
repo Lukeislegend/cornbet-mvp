@@ -195,6 +195,130 @@ async function writeFuturesChampion(team: string): Promise<void> {
   await kv.set(KEY_FUTURES_CHAMPION, team.trim());
 }
 
+// ─── ESPN results fetch ───────────────────────────────────────────────────────
+// Fetches completed NCAAB games from the free ESPN scoreboard API.
+// Checks today + last 2 days so games played the previous night are caught.
+
+interface ESPNGame {
+  winner:    string;
+  homeScore: number;
+  awayScore: number;
+  homeTeam:  string;
+  awayTeam:  string;
+}
+
+async function fetchESPNResults(): Promise<Record<string, ESPNGame>> {
+  const results: Record<string, ESPNGame> = {};
+
+  // Build YYYYMMDD strings for today and the prior 2 days
+  const dates: string[] = [];
+  for (let d = 0; d <= 2; d++) {
+    const dt = new Date();
+    dt.setDate(dt.getDate() - d);
+    dates.push(dt.toISOString().slice(0, 10).replace(/-/g, ""));
+  }
+
+  await Promise.all(dates.map(async (dateStr) => {
+    try {
+      const url =
+        `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?dates=${dateStr}`;
+      const controller = new AbortController();
+      const t = setTimeout(() => controller.abort(), 5000);
+      const res = await fetch(url, { signal: controller.signal }).finally(() => clearTimeout(t));
+      if (!res.ok) return;
+
+      const data = await res.json();
+      for (const event of data.events ?? []) {
+        const competition = event.competitions?.[0];
+        if (!competition?.status?.type?.completed) continue;
+
+        const comps = (competition.competitors ?? []) as any[];
+        const home  = comps.find((c: any) => c.homeAway === "home");
+        const away  = comps.find((c: any) => c.homeAway === "away");
+        if (!home || !away) continue;
+
+        const homeTeam  = home.team.displayName as string;
+        const awayTeam  = away.team.displayName as string;
+        const homeScore = parseInt(home.score ?? "0");
+        const awayScore = parseInt(away.score ?? "0");
+        const winner    = home.winner ? homeTeam : awayTeam;
+
+        // Game key matches how bets are stored: "Away vs Home"
+        const gameKey = `${awayTeam} vs ${homeTeam}`;
+        results[gameKey] = { winner, homeScore, awayScore, homeTeam, awayTeam };
+      }
+    } catch (err) {
+      console.log(`fetchESPNResults: error for date ${dateStr}:`, err);
+    }
+  }));
+
+  console.log(`fetchESPNResults: ${Object.keys(results).length} completed games found`);
+  return results;
+}
+
+// Parse the point spread from a leg label like "Duke -5.5 (-110)" → -5.5
+function parseSpreadPoints(label: string, teamName: string): number | null {
+  const rest  = label.slice(teamName.length).trim();
+  const match = rest.match(/^([+-]?\d+\.?\d*)/);
+  return match ? parseFloat(match[1]) : null;
+}
+
+// Returns true if teamName covered their spread given the final scores
+function coveredSpread(
+  teamName: string, spread: number,
+  homeTeam: string, homeScore: number, awayScore: number
+): boolean {
+  const isHome = teamName === homeTeam;
+  const margin = isHome ? (homeScore - awayScore) : (awayScore - homeScore);
+  // Covers if: actual margin + spread > 0
+  // e.g. Duke -5.5 wins by 10 → 10 + (-5.5) = 4.5 > 0 ✓
+  // e.g. Duke -5.5 wins by  3 →  3 + (-5.5) = -2.5   ✗
+  return (margin + spread) > 0;
+}
+
+// Server-side leg resolution — mirrors AppContext checkLegResult
+function resolveServerLeg(leg: any, gr: GameResultsMap): "won" | "lost" | "pending" {
+  if (!leg || leg.type === "Futures") return "pending";
+  const result = gr[leg.game as string];
+  if (!result) return "pending";
+
+  if (leg.type === "Moneyline") {
+    return (leg.team as string) === result.winner ? "won" : "lost";
+  }
+  if (leg.type === "Spread") {
+    return result.spreadWinners.includes(leg.team as string) ? "won" : "lost";
+  }
+  if (leg.type === "Over/Under") {
+    const sel      = ((leg.selection ?? leg.team) as string ?? "").toLowerCase();
+    const isOver   = sel.includes("over");
+    const isUnder  = sel.includes("under");
+    const numMatch = sel.match(/(\d+\.?\d*)/);
+    if (!numMatch || (!isOver && !isUnder)) return "pending";
+    const line = parseFloat(numMatch[1]);
+    if (isNaN(line)) return "pending";
+    return isOver ? (result.total > line ? "won" : "lost") : (result.total < line ? "won" : "lost");
+  }
+  return "pending";
+}
+
+// Server-side bet resolution — mirrors AppContext resolveBetOutcome
+function resolveServerBet(
+  bet: any, gr: GameResultsMap, champion: string | null
+): "won" | "lost" | "pending" {
+  if (bet.type === "Futures") {
+    if (!champion?.trim()) return "pending";
+    const leg = (bet.legs as any[])?.[0];
+    if (!leg) return "pending";
+    const betTeam = ((leg.team ?? leg.selection) as string ?? "").trim().toLowerCase();
+    return betTeam === champion.trim().toLowerCase() ? "won" : "lost";
+  }
+  const legs    = (bet.legs as any[]) ?? [];
+  const results = legs.map((leg: any) => resolveServerLeg(leg, gr));
+  if (results.some((r: string) => r === "pending")) return "pending";
+  if (bet.type === "Parlay") return results.every((r: string) => r === "won") ? "won" : "lost";
+  return results[0] ?? "pending";
+}
+
 // ─── Bet validation ───────────────────────────────────────────────────────────
 
 interface ValidationError { field: string; message: string; }
@@ -916,6 +1040,139 @@ app.post(`${PREFIX}/bets/resolve-batch`, async (c) => {
 
   } catch (err) {
     console.log("Error in POST /bets/resolve-batch:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// POST /bets/auto-resolve
+//
+// Fetches completed NCAAB games from ESPN, populates the game-results KV store,
+// and resolves all pending bets for the requesting user automatically.
+// Called on app load whenever the user has pending bets.
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.post(`${PREFIX}/bets/auto-resolve`, async (c) => {
+  try {
+    const userId = await requireAuth(c);
+    if (typeof userId !== "string") return userId;
+
+    // 1. Fetch ESPN completed games (today + 2 prior days)
+    const espnGames  = await fetchESPNResults();
+    const gamesFound = Object.keys(espnGames).length;
+
+    if (gamesFound === 0) {
+      console.log(`auto-resolve userId=${userId}: no ESPN games found`);
+      return c.json({ ok: true, resolved: 0, gamesFound: 0 });
+    }
+
+    // 2. Load all pending bets for this user
+    const [straightRaw, parlayRaw, futureRaw] = await Promise.all([
+      kv.getByPrefix(keys.betPfx(userId)),
+      kv.getByPrefix(keys.parlayPfx(userId)),
+      kv.getByPrefix(keys.futurePfx(userId)),
+    ]);
+
+    const pendingBets = [
+      ...(straightRaw as any[]),
+      ...(parlayRaw   as any[]),
+      ...(futureRaw   as any[]),
+    ].filter(b => b?.status === "pending");
+
+    if (pendingBets.length === 0) {
+      console.log(`auto-resolve userId=${userId}: no pending bets`);
+      return c.json({ ok: true, resolved: 0, gamesFound });
+    }
+
+    // 3. Build / update GameResultsMap from ESPN data
+    //    Only writes new game keys — never overwrites existing results.
+    const gameResults = await readGameResults();
+    const champion    = await readFuturesChampion();
+
+    for (const [gameKey, espn] of Object.entries(espnGames)) {
+      if (gameResults[gameKey]) continue; // already stored
+
+      const { winner, homeScore, awayScore, homeTeam } = espn;
+      const total = homeScore + awayScore;
+
+      // Determine spread winners from pending spread legs for this game
+      const spreadWinners: string[] = [];
+      const seenTeams = new Set<string>();
+
+      for (const bet of pendingBets) {
+        for (const leg of (bet.legs as any[]) ?? []) {
+          if (leg.type !== "Spread" || leg.game !== gameKey) continue;
+          const team = leg.team as string;
+          if (!team || seenTeams.has(team)) continue;
+          seenTeams.add(team);
+
+          const pts = parseSpreadPoints(leg.label ?? "", team);
+          if (pts === null) continue;
+          if (coveredSpread(team, pts, homeTeam, homeScore, awayScore)) {
+            spreadWinners.push(team);
+          }
+        }
+      }
+
+      gameResults[gameKey] = { winner, total, spreadWinners };
+      console.log(`auto-resolve: stored result for "${gameKey}" → winner=${winner} total=${total} spreadWinners=[${spreadWinners}]`);
+    }
+
+    await writeGameResults(gameResults);
+
+    // 4. Resolve each pending bet sequentially (avoids KV race conditions)
+    let resolved = 0;
+    const errors: string[] = [];
+
+    for (const bet of pendingBets) {
+      const outcome = resolveServerBet(bet, gameResults, champion);
+      if (outcome === "pending") continue;
+
+      const kvKey = (bet as any)._kvKey as string | undefined;
+      if (!kvKey) continue;
+
+      try {
+        const existing = await kv.get(kvKey) as any;
+        if (!existing || existing.status !== "pending") continue;
+
+        const stake = typeof existing.stake === "number" ? existing.stake : 0;
+
+        if (outcome === "won") {
+          const winPayout = typeof existing.payout === "number" && existing.payout > 0
+            ? existing.payout : stake;
+          const [curBal, curBank] = await Promise.all([readBalance(userId), readBank()]);
+          await writeBalance(userId, curBal + winPayout);
+          await writeBank(Math.round((curBank - winPayout) * 100) / 100);
+          await kv.set(kvKey, { ...existing, status: "won", payout: winPayout, resolvedAt: Date.now() });
+          console.log(`auto-resolve WON userId=${userId} payout=$${winPayout} key=${kvKey}`);
+
+        } else {
+          const curBank = await readBank();
+          await writeBank(curBank + stake);
+          await kv.set(kvKey, { ...existing, status: "lost", payout: 0, resolvedAt: Date.now() });
+          console.log(`auto-resolve LOST userId=${userId} stake=$${stake} key=${kvKey}`);
+        }
+
+        resolved++;
+      } catch (itemErr) {
+        const msg = `Failed ${kvKey}: ${itemErr}`;
+        console.log(`auto-resolve error: ${msg}`);
+        errors.push(msg);
+      }
+    }
+
+    const newBalance = await readBalance(userId);
+    const newBank    = await readBank();
+
+    console.log(
+      `auto-resolve userId=${userId}: ${resolved}/${pendingBets.length} resolved — ` +
+      `balance=$${newBalance} bank=$${newBank}`
+    );
+
+    return c.json({ ok: true, resolved, gamesFound, errors, newBalance, newBank });
+
+  } catch (err) {
+    console.log("Error in POST /bets/auto-resolve:", err);
     return c.json({ error: String(err) }, 500);
   }
 });

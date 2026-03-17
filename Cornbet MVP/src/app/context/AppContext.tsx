@@ -380,6 +380,44 @@ export function AppProvider({ children }: { children: ReactNode }) {
     } else {
       console.log('CornBet bootstrap completed with some fetch errors (see warnings above).');
     }
+
+    // ── Auto-resolve: fire in background after bootstrap ─────────────────────
+    // Checks ESPN for completed games and resolves any pending bets.
+    // Non-blocking — loading screen clears before this finishes.
+    const hasPending =
+      betsResult.status === 'fulfilled' &&
+      Array.isArray(betsResult.value) &&
+      betsResult.value.some((b: any) => b?.status === 'pending');
+
+    if (hasPending) {
+      (async () => {
+        try {
+          console.log('CornBet: pending bets found — running auto-resolve…');
+          const result = await apiFetch('/bets/auto-resolve', { method: 'POST' });
+          if (result.resolved > 0) {
+            if (typeof result.newBalance === 'number') setPlayWalletLocal(result.newBalance);
+            if (typeof result.newBank    === 'number') setGroupBankLocal(result.newBank);
+            // Refresh bets + game results so the UI reflects resolved statuses
+            const [freshBets, freshGR] = await Promise.allSettled([
+              apiFetch('/bets'),
+              apiFetch('/game-results'),
+            ]);
+            if (freshBets.status === 'fulfilled' && Array.isArray(freshBets.value))
+              setPlacedBets(freshBets.value);
+            if (freshGR.status === 'fulfilled' && freshGR.value && typeof freshGR.value === 'object')
+              setGameResults(freshGR.value as GameResultsMap);
+            console.log(
+              `CornBet auto-resolve: ${result.resolved} bets resolved — ` +
+              `balance=$${result.newBalance} bank=$${result.newBank}`
+            );
+          } else {
+            console.log(`CornBet auto-resolve: ${result.gamesFound} games checked, 0 bets resolved`);
+          }
+        } catch (err) {
+          console.warn('CornBet auto-resolve failed (non-fatal):', err);
+        }
+      })();
+    }
   }, [apiFetch]);
 
   // ── On mount: bootstrap then subscribe to future changes ──────────────────
