@@ -108,51 +108,9 @@ export const resolveBetOutcome = (bet: PlacedBet, gameResults: GameResultsMap, c
 
 const BASE = API_BASE;
 
-// ─── KV key schema (mirrors the server) ──────────────────────────────────────
-
-const KV_TABLE   = 'kv_store_55aa94ce';
-const BALANCE_DEFAULT = 500;
-
-const kvKeys = {
-  balance:   (uid: string)             => `cornbet:u:${uid}:balance`,
-  bet:       (uid: string, id: string) => `cornbet:u:${uid}:bet:${id}`,
-  parlay:    (uid: string, id: string) => `cornbet:u:${uid}:parlay:${id}`,
-  future:    (uid: string, id: string) => `cornbet:u:${uid}:future:${id}`,
-  betPfx:    (uid: string)             => `cornbet:u:${uid}:bet:%`,
-  parlayPfx: (uid: string)             => `cornbet:u:${uid}:parlay:%`,
-  futurePfx: (uid: string)             => `cornbet:u:${uid}:future:%`,
-};
-
-// ─── Direct Supabase KV helpers ───────────────────────────────────────────────
-// These bypass the custom API server entirely.  The Supabase client
-// automatically attaches the user's JWT to every table request, so no manual
-// token handling is required.
-
-async function kvRead(key: string): Promise<any> {
-  const { data, error } = await supabase
-    .from(KV_TABLE)
-    .select('value')
-    .eq('key', key)
-    .maybeSingle();
-  if (error) throw new Error(`KV read failed for key "${key}": ${error.message}`);
-  return data?.value ?? null;
-}
-
-async function kvWrite(key: string, value: any): Promise<void> {
-  const { error } = await supabase
-    .from(KV_TABLE)
-    .upsert({ key, value }, { onConflict: 'key' });
-  if (error) throw new Error(`KV write failed for key "${key}": ${error.message}`);
-}
-
-async function kvReadByPrefix(prefix: string): Promise<any[]> {
-  const { data, error } = await supabase
-    .from(KV_TABLE)
-    .select('value')
-    .like('key', prefix);
-  if (error) throw new Error(`KV prefix read failed for "${prefix}": ${error.message}`);
-  return (data ?? []).map(row => row.value).filter(Boolean);
-}
+// ─── Unique IDs ─────────────────────────────────────────────────────────────
+// All KV access is via the API (server uses service role, bypasses RLS).
+// Direct Supabase client calls to kv_store hit RLS and fail with 403.
 
 function newUid(): string {
   return `${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
@@ -351,9 +309,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
 
   // ─── Bootstrap data for an authenticated user ──────────────────────────────
   //
-  // player-balance and maize-bank still use the server API (they work fine).
-  // Bets are fetched directly from the KV table via the Supabase client so
-  // the /bets API route is never called — eliminating the JWT 401 path.
+  // All data fetched via API (server uses service role, bypasses RLS).
+  // No direct Supabase client calls to kv_store — those hit RLS and fail with 403.
   const bootstrapData = useCallback(async (freshToken: string) => {
     tokenRef.current = freshToken;
     setDbError(null);
@@ -366,18 +323,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
     const [playerResult, bankResult, betsResult, gameResultsResult, championResult] = await Promise.allSettled([
       apiFetch('/player-balance'),
       apiFetch('/maize-bank'),
-      // Fetch bets directly from kv_store — no custom API route involved
-      uid
-        ? Promise.all([
-            kvReadByPrefix(kvKeys.betPfx(uid)),
-            kvReadByPrefix(kvKeys.parlayPfx(uid)),
-            kvReadByPrefix(kvKeys.futurePfx(uid)),
-          ]).then(([bets, parlays, futures]) =>
-            [...bets, ...parlays, ...futures]
-              .filter(Boolean)
-              .sort((a: any, b: any) => (b.placedAt ?? 0) - (a.placedAt ?? 0))
-          )
-        : Promise.resolve([]),
+      // Fetch bets via API (avoids direct Supabase/RLS; server uses service role)
+      uid ? apiFetch('/bets') : Promise.resolve([]),
       apiFetch('/game-results'),
       apiFetch('/futures/champion'),
     ]);
@@ -691,19 +638,11 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }).catch(err => console.error('Failed to sync maize bank:', err));
   }, [apiFetch]);
 
-  // ── Add bet — direct Supabase (no custom API) ─────────────────────────────
+  // ── Add bet — via API (server uses service role, bypasses RLS) ────────────
   //
-  // Flow:
-  //   1. Get authenticated user from supabase.auth.getUser()
-  //   2. Read current balance directly from kv_store_55aa94ce
-  //   3. Validate wager ≤ balance  (reject with "Insufficient balance" if not)
-  //   4. Insert bet record into kv_store_55aa94ce  (status = "pending")
-  //   5. Update player balance in kv_store_55aa94ce
-  //
-  // The Supabase client automatically includes the user's JWT in every
-  // table request — no manual token extraction or forwarding required.
+  // Direct Supabase KV writes from the frontend hit RLS and fail with 403.
+  // The POST /bets API validates the user JWT, then writes via service role.
   const addBet = useCallback(async (bet: PlacedBet) => {
-    // ── Basic shape checks ──────────────────────────────────────────────────
     if (!bet.legs || bet.legs.length === 0) {
       throw new Error('Bet must have at least one selection.');
     }
@@ -714,79 +653,48 @@ export function AppProvider({ children }: { children: ReactNode }) {
       throw new Error('Minimum wager is $1.');
     }
 
-    // ── 1. Get authenticated user ───────────────────────────────────────────
-    const { data: { user: authUser }, error: userErr } = await supabase.auth.getUser();
-    if (userErr || !authUser) {
-      throw new Error('You must be signed in to place a bet.');
-    }
-    const userId = authUser.id;
-
-    // ── 2. Read current balance from KV table ───────────────────────────────
-    let currentBalance: number;
-    try {
-      const raw = await kvRead(kvKeys.balance(userId));
-      currentBalance = typeof raw === 'number' ? raw : BALANCE_DEFAULT;
-    } catch (err) {
-      console.error('addBet: failed to read balance —', err);
-      throw new Error('Could not verify your balance. Please try again.');
-    }
-
-    // ── 3. Validate wager against balance ──────────────────────────────────
-    if (bet.stake > currentBalance) {
-      throw new Error('Insufficient balance to place this bet.');
-    }
-
-    // ── 4. Insert bet record with status = "pending" ────────────────────────
-    const uid = newUid();
-    let kvKey: string;
-    let dbType: 'bet' | 'parlay' | 'futures';
-
-    if (bet.type === 'Parlay') {
-      kvKey  = kvKeys.parlay(userId, uid);
-      dbType = 'parlay';
-    } else if (bet.type === 'Futures') {
-      kvKey  = kvKeys.future(userId, uid);
-      dbType = 'futures';
-    } else {
-      kvKey  = kvKeys.bet(userId, uid);
-      dbType = 'bet';
-    }
-
-    const record = {
-      ...bet,
-      status:  'pending',
-      _kvKey:  kvKey,
-      _dbId:   uid,
-      _dbType: dbType,
-      userId,
+    const payload = {
+      type: bet.type,
+      legs: bet.legs,
+      combinedOdds: bet.combinedOdds,
+      stake: bet.stake,
     };
 
+    let result: { dbId?: string; dbType?: 'bet' | 'parlay' | 'futures'; newBalance?: number; error?: string };
     try {
-      await kvWrite(kvKey, record);
+      result = await apiFetch('/bets', {
+        method: 'POST',
+        body: JSON.stringify(payload),
+      }) as typeof result;
     } catch (err) {
-      console.error('addBet: failed to insert bet record —', err);
-      throw new Error('Failed to save bet. Please try again.');
+      const msg = err instanceof Error ? err.message : String(err);
+      const jsonMatch = msg.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          const body = JSON.parse(jsonMatch[0]);
+          if (body?.error) throw new Error(body.error);
+        } catch (_) {}
+      }
+      throw err;
     }
 
-    // ── 5. Update player balance (deduct wager) ─────────────────────────────
-    const newBalance = Math.round((currentBalance - bet.stake) * 100) / 100;
-    try {
-      await kvWrite(kvKeys.balance(userId), newBalance);
-    } catch (err) {
-      console.error('addBet: failed to update balance —', err);
-      // Bet was saved but balance update failed — still update local state
-      // so the UI reflects the deduction; server will reconcile on next load.
+    if (result.error) {
+      throw new Error(result.error);
     }
 
-    // ── Update local React state ────────────────────────────────────────────
-    setPlayWalletLocal(newBalance);
-    setPlacedBets(prev => [...prev, { ...bet, _dbId: uid, _dbType: dbType }]);
+    const dbId = result.dbId ?? newUid();
+    const dbType = (result.dbType ?? 'bet') as 'bet' | 'parlay' | 'futures';
+
+    if (typeof result.newBalance === 'number') {
+      setPlayWalletLocal(result.newBalance);
+    }
+    setPlacedBets(prev => [...prev, { ...bet, _dbId: dbId, _dbType: dbType, placedAt: Date.now() }]);
 
     console.log(
-      `addBet OK (direct Supabase): type=${bet.type} stake=$${bet.stake} ` +
-      `newBalance=$${newBalance}`
+      `addBet OK [API] type=${bet.type} stake=$${bet.stake} ` +
+      `newBalance=$${result.newBalance ?? '—'}`
     );
-  }, []);  // no apiFetch dependency — uses direct KV helpers
+  }, [apiFetch]);
 
   // ── Refresh game results (for Admin after entering scores) ─────────────────
   const refreshGameResults = useCallback(async () => {
