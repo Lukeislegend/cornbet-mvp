@@ -563,10 +563,14 @@ export function AppProvider({ children }: { children: ReactNode }) {
           // signIn() calls bootstrapData directly, so bootstrappedRef is
           // already true when this fires.  This handles unexpected paths
           // (e.g. OAuth redirect) where signIn() wasn't called explicitly.
-          if (event === 'SIGNED_IN' && !bootstrappedRef.current) {
-            console.log('CornBet: SIGNED_IN safety-net bootstrap');
-            bootstrappedRef.current = true;
-            await bootstrapData(newSession.access_token);
+          if (event === 'SIGNED_IN') {
+            if (!bootstrappedRef.current) {
+              console.log('CornBet: SIGNED_IN safety-net bootstrap');
+              bootstrappedRef.current = true;
+              await bootstrapData(newSession.access_token);
+            }
+            // Always clear loading on SIGNED_IN (fixes race where startup
+            // finally ran first; second bootstrap skipped setIsLoading)
             if (mounted) setIsLoading(false);
           }
         }
