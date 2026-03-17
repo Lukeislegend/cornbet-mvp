@@ -488,7 +488,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
             setSession(refreshed.session);
             setUser(refreshed.session.user);
             bootstrappedRef.current = true;
-            await bootstrapData(refreshed.session.access_token);
+            // Race bootstrap against a 10s timeout so the app never hangs
+            // on slow/unresponsive API calls — clearLoading() fires either way.
+            await Promise.race([
+              bootstrapData(refreshed.session.access_token),
+              new Promise<void>(resolve => setTimeout(resolve, 10_000)),
+            ]);
           } else {
             // Cannot refresh — sign out so the user lands on the Login screen
             console.warn('CornBet: could not refresh expired token — signing out');
@@ -501,7 +506,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
           setSession(initial);
           setUser(initial.user);
           bootstrappedRef.current = true;
-          await bootstrapData(initial.access_token);
+          // Race bootstrap against a 10s timeout so the app never hangs
+          // on slow/unresponsive API calls — clearLoading() fires either way.
+          await Promise.race([
+            bootstrapData(initial.access_token),
+            new Promise<void>(resolve => setTimeout(resolve, 10_000)),
+          ]);
         }
       } catch (err) {
         console.error('CornBet: startup getSession() error:', err);
@@ -615,7 +625,12 @@ export function AppProvider({ children }: { children: ReactNode }) {
     setUser(data.user);
     bootstrappedRef.current = true;
 
-    await bootstrapData(data.session.access_token);
+    // Fire bootstrap without awaiting — the app renders immediately after auth
+    // succeeds rather than waiting for all API calls to complete. Data updates
+    // arrive in the background and React re-renders each piece as it lands.
+    bootstrapData(data.session.access_token).catch(err =>
+      console.error('CornBet: post-login bootstrap failed:', err)
+    );
   }, [bootstrapData]);
 
   // ── Sign Up ───────────────────────────────────────────────────────────────
