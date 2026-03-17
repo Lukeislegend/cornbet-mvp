@@ -1446,20 +1446,154 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
       } catch { return []; }
     };
 
-    const results = await Promise.all(
-      FUTURE_MARKETS.map(({ sportKey, market }) => fetchMarket(sportKey, market))
+    // Fetch ESPN article for multi-market odds (Sweet 16, Elite 8, Final Four, Championship)
+    const fetchEspnFutures = async (): Promise<{ name: string; odds: string; market: string }[]> => {
+      const ESPN_URL = 'https://www.espn.com/espn/betting/story/_/id/48216458/espn-ncaa-tournament-men-national-championship-final-four-elite-eight-teams';
+      try {
+        const res = await fetch(ESPN_URL, {
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+            'Accept': 'text/html,application/xhtml+xml',
+          }
+        });
+        if (!res.ok) { console.log(`ESPN fetch failed: ${res.status}`); return []; }
+        const html = await res.text();
+        console.log(`ESPN HTML length: ${html.length}`);
+
+        const results: { name: string; odds: string; market: string }[] = [];
+        const COL_MARKETS: Record<number, string> = {
+          2: 'championship',
+          3: 'finals',
+          4: 'final_four',
+          5: 'elite_eight',
+          6: 'sweet_sixteen',
+        };
+
+        const rowRegex = /<tr[^>]*>([\s\S]*?)<\/tr>/g;
+        let rowMatch: RegExpExecArray | null;
+        while ((rowMatch = rowRegex.exec(html)) !== null) {
+          const rowHtml = rowMatch[1];
+          const cellMatches = [...rowHtml.matchAll(/<td[^>]*>([\s\S]*?)<\/td>/g)];
+          const cells = cellMatches.map(m => m[1]);
+          if (cells.length < 7) continue;
+
+          const nameMatch = cells[0].match(/<a[^>]*>([^<]+)<\/a>/);
+          if (!nameMatch) continue;
+          const teamName = nameMatch[1].trim();
+          if (!teamName || teamName.length < 2) continue;
+
+          for (const [colStr, market] of Object.entries(COL_MARKETS)) {
+            const col = parseInt(colStr);
+            const cell = cells[col] ?? '';
+            const oddsMatch = cell.match(/([+\-]\d+)/);
+            if (oddsMatch) {
+              results.push({ name: teamName, odds: oddsMatch[1], market });
+            }
+          }
+        }
+
+        console.log(`ESPN futures parsed: ${results.length} entries`);
+        return results;
+      } catch (e) {
+        console.log('ESPN futures error:', e);
+        return [];
+      }
+    };
+
+    const [oddsResults, espnResults] = await Promise.all([
+      Promise.all(FUTURE_MARKETS.map(({ sportKey, market }) => fetchMarket(sportKey, market))),
+      fetchEspnFutures(),
+    ]);
+
+    const oddsTeams = oddsResults.flat();
+    const oddsChampionshipNames = new Set(
+      oddsTeams.filter(t => t.market === 'championship').map(t => t.name.toLowerCase())
     );
 
-    const teams = results.flat();
+    const espnNonChampionship = espnResults.filter(t => t.market !== 'championship');
+    const espnChampionship = espnResults.filter(t =>
+      t.market === 'championship' && !oddsChampionshipNames.has(t.name.toLowerCase())
+    );
+
+    const teams = [...oddsTeams, ...espnNonChampionship, ...espnChampionship];
     teams.sort((a, b) =>
       parseInt(a.odds.replace("+", "")) - parseInt(b.odds.replace("+", ""))
     );
 
-    console.log(`ncaab-futures: ${teams.length} total entries`);
+    console.log(`ncaab-futures: ${teams.length} total entries (${oddsTeams.length} from OddsAPI, ${espnResults.length} from ESPN)`);
     return c.json({ teams });
   } catch (err) {
     console.log("Error in GET /ncaab-futures:", err);
     return c.json({ teams: [] });
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// GET /admin/bets — list ALL bets across all registered users (admin only)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.get(`${PREFIX}/admin/bets`, async (c) => {
+  try {
+    const userId = await requireAuth(c);
+    if (typeof userId !== "string") return userId;
+
+    const registry = await readRegistry();
+    const userIds  = Object.keys(registry);
+    const allBets: any[] = [];
+
+    await Promise.all(userIds.map(async uid => {
+      const [straight, parlay, future] = await Promise.all([
+        kv.getByPrefix(keys.betPfx(uid)),
+        kv.getByPrefix(keys.parlayPfx(uid)),
+        kv.getByPrefix(keys.futurePfx(uid)),
+      ]);
+      const userName = registry[uid]?.displayName ?? uid;
+      for (const b of [...(straight as any[]), ...(parlay as any[]), ...(future as any[])]) {
+        if (b) allBets.push({ ...b, _userName: userName });
+      }
+    }));
+
+    allBets.sort((a, b) => (b.placedAt ?? 0) - (a.placedAt ?? 0));
+    return c.json({ bets: allBets });
+  } catch (err) {
+    console.log("Error in GET /admin/bets:", err);
+    return c.json({ error: String(err) }, 500);
+  }
+});
+
+// ══════════════════════════════════════════════════════════════════════════════
+// DELETE /admin/bets — delete a single bet by its _kvKey (refunds if pending)
+// ══════════════════════════════════════════════════════════════════════════════
+
+app.delete(`${PREFIX}/admin/bets`, async (c) => {
+  try {
+    const adminId = await requireAuth(c);
+    if (typeof adminId !== "string") return adminId;
+
+    const { kvKey } = await c.req.json();
+    if (!kvKey || typeof kvKey !== "string") {
+      return c.json({ error: "kvKey is required" }, 400);
+    }
+
+    const existing = await kv.get(kvKey) as any;
+    if (!existing) return c.json({ error: "Bet not found" }, 404);
+
+    let refundedAmount = 0;
+    const betUserId = existing.userId as string | undefined;
+    if (existing.status === "pending" && betUserId) {
+      const stake = typeof existing.stake === "number" ? existing.stake : 0;
+      if (stake > 0) {
+        const currentBalance = await readBalance(betUserId);
+        await writeBalance(betUserId, currentBalance + stake);
+        refundedAmount = stake;
+      }
+    }
+
+    await kv.del(kvKey);
+    return c.json({ ok: true, refundedAmount });
+  } catch (err) {
+    console.log("Error in DELETE /admin/bets:", err);
+    return c.json({ error: String(err) }, 500);
   }
 });
 

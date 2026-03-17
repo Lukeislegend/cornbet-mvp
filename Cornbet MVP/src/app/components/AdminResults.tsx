@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useNavigate } from 'react-router';
+import { Trash2, RefreshCw } from 'lucide-react';
 import { MobileContainer } from './MobileContainer';
 import { WalletBar } from './WalletBar';
 import { useApp } from '../context/AppContext';
@@ -29,6 +30,21 @@ interface FreeformEntry {
   spreadWinners: string;
 }
 
+interface AdminBet {
+  _kvKey: string;
+  _dbType: string;
+  _userName: string;
+  userId: string;
+  type: string;
+  status: string;
+  stake: number;
+  selection?: string;
+  team?: string;
+  odds?: string;
+  combinedOdds?: string;
+  placedAt?: number;
+}
+
 const EMPTY_ENTRY: FreeformEntry = { gameKey: '', winner: '', total: '', spreadWinners: '' };
 
 // ─── component ────────────────────────────────────────────────────────────────
@@ -49,6 +65,13 @@ export function AdminResults() {
   const [resolving, setResolving] = useState(false);
   const [saveMsg,   setSaveMsg]   = useState<string | null>(null);
   const [resolveMsg, setResolveMsg] = useState<string | null>(null);
+
+  // Admin bets management
+  const [adminBets,     setAdminBets]     = useState<AdminBet[]>([]);
+  const [betsLoading,   setBetsLoading]   = useState(false);
+  const [deletingKey,   setDeletingKey]   = useState<string | null>(null);
+  const [deleteMsg,     setDeleteMsg]     = useState<string | null>(null);
+  const [betsExpanded,  setBetsExpanded]  = useState(false);
 
   // Load existing champion on mount
   useEffect(() => {
@@ -165,6 +188,50 @@ export function AdminResults() {
       }
     } finally {
       setSaving(false);
+    }
+  };
+
+  // ── load all bets ──────────────────────────────────────────────────────────
+
+  const loadAdminBets = useCallback(async () => {
+    if (!session?.access_token) return;
+    setBetsLoading(true);
+    try {
+      const res = await fetch(`${BASE}/admin/bets`, {
+        headers: authHeaders(session.access_token),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setAdminBets(Array.isArray(data.bets) ? data.bets : []);
+      }
+    } finally {
+      setBetsLoading(false);
+    }
+  }, [session?.access_token]);
+
+  // ── delete a bet ───────────────────────────────────────────────────────────
+
+  const handleDeleteBet = async (kvKey: string, betStatus: string) => {
+    if (!session?.access_token) return;
+    setDeletingKey(kvKey);
+    setDeleteMsg(null);
+    try {
+      const res = await fetch(`${BASE}/admin/bets`, {
+        method: 'DELETE',
+        headers: authHeaders(session.access_token),
+        body: JSON.stringify({ kvKey }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        setAdminBets(prev => prev.filter(b => b._kvKey !== kvKey));
+        const refund = data.refundedAmount > 0 ? ` · $${data.refundedAmount} refunded` : '';
+        setDeleteMsg(`✓ Bet deleted${refund}`);
+        setTimeout(() => setDeleteMsg(null), 3000);
+      } else {
+        setDeleteMsg(data.error ?? 'Delete failed');
+      }
+    } finally {
+      setDeletingKey(null);
     }
   };
 
@@ -414,6 +481,157 @@ export function AdminResults() {
               </div>
             </div>
           )}
+
+          {/* ── Manage bets ──────────────────────────────────────────── */}
+          <div
+            className="rounded-2xl overflow-hidden"
+            style={{ border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            {/* Collapsible header */}
+            <button
+              onClick={() => {
+                const opening = !betsExpanded;
+                setBetsExpanded(opening);
+                if (opening && adminBets.length === 0) loadAdminBets();
+              }}
+              className="w-full flex items-center justify-between px-4 py-3"
+              style={{ background: 'rgba(255,255,255,0.04)' }}
+            >
+              <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '13px', fontWeight: '700' }}>
+                🗑️ Manage bets
+              </span>
+              <div className="flex items-center gap-2">
+                {adminBets.length > 0 && (
+                  <span style={{ fontSize: '10px', color: 'rgba(255,255,255,0.35)', fontWeight: '600' }}>
+                    {adminBets.length} bets
+                  </span>
+                )}
+                <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '16px', lineHeight: 1 }}>
+                  {betsExpanded ? '▲' : '▼'}
+                </span>
+              </div>
+            </button>
+
+            <AnimatePresence>
+              {betsExpanded && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.2 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div className="px-4 pb-4 pt-2">
+                    {/* Refresh + status */}
+                    <div className="flex items-center justify-between mb-3">
+                      <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: '11px' }}>
+                        Delete a bet — refunds stake if still pending
+                      </p>
+                      <button
+                        onClick={loadAdminBets}
+                        disabled={betsLoading}
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg"
+                        style={{ background: 'rgba(255,179,0,0.08)', border: '1px solid rgba(255,213,79,0.15)' }}
+                      >
+                        <motion.div
+                          animate={betsLoading ? { rotate: 360 } : { rotate: 0 }}
+                          transition={betsLoading ? { duration: 0.8, repeat: Infinity, ease: 'linear' } : {}}
+                        >
+                          <RefreshCw size={11} style={{ color: '#FFB300' }} />
+                        </motion.div>
+                        <span style={{ fontSize: '10px', color: '#FFB300', fontWeight: '600' }}>Refresh</span>
+                      </button>
+                    </div>
+
+                    <AnimatePresence>
+                      {deleteMsg && (
+                        <motion.p
+                          initial={{ opacity: 0, y: -4 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
+                          className="mb-3 text-center text-xs"
+                          style={{ color: deleteMsg.startsWith('✓') ? '#66BB6A' : '#EF9A9A' }}
+                        >
+                          {deleteMsg}
+                        </motion.p>
+                      )}
+                    </AnimatePresence>
+
+                    {betsLoading && adminBets.length === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', textAlign: 'center', paddingTop: '8px' }}>
+                        Loading bets…
+                      </p>
+                    ) : adminBets.length === 0 ? (
+                      <p style={{ color: 'rgba(255,255,255,0.3)', fontSize: '12px', textAlign: 'center', paddingTop: '8px' }}>
+                        No bets found
+                      </p>
+                    ) : (
+                      <div className="space-y-2" style={{ maxHeight: '320px', overflowY: 'auto' }}>
+                        {adminBets.map(bet => (
+                          <div
+                            key={bet._kvKey}
+                            className="flex items-start justify-between gap-2 px-3 py-2 rounded-xl"
+                            style={{
+                              background: bet.status === 'pending'
+                                ? 'rgba(255,213,79,0.05)'
+                                : 'rgba(255,255,255,0.03)',
+                              border: `1px solid ${bet.status === 'pending' ? 'rgba(255,213,79,0.12)' : 'rgba(255,255,255,0.06)'}`,
+                            }}
+                          >
+                            <div style={{ flex: 1, minWidth: 0 }}>
+                              <div className="flex items-center gap-1.5 mb-0.5">
+                                <span style={{
+                                  fontSize: '9px', fontWeight: '700', letterSpacing: '0.4px',
+                                  color: bet.status === 'pending' ? '#FFD54F'
+                                       : bet.status === 'won' ? '#66BB6A' : 'rgba(255,255,255,0.3)',
+                                  textTransform: 'uppercase',
+                                }}>
+                                  {bet.status}
+                                </span>
+                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)' }}>·</span>
+                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.4)', fontWeight: '600' }}>
+                                  {bet._userName}
+                                </span>
+                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.25)' }}>·</span>
+                                <span style={{ fontSize: '9px', color: 'rgba(255,255,255,0.35)' }}>
+                                  {bet.type} · ${bet.stake}
+                                </span>
+                              </div>
+                              <p style={{
+                                fontSize: '11px', color: 'rgba(255,255,255,0.65)', fontWeight: '600',
+                                overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
+                              }}>
+                                {bet.selection ?? bet.team ?? '—'}
+                              </p>
+                              <p style={{ fontSize: '10px', color: 'rgba(255,255,255,0.3)' }}>
+                                {bet.odds ?? bet.combinedOdds ?? ''}
+                                {bet.placedAt ? ` · ${new Date(bet.placedAt).toLocaleDateString()}` : ''}
+                              </p>
+                            </div>
+                            <button
+                              onClick={() => handleDeleteBet(bet._kvKey, bet.status)}
+                              disabled={deletingKey === bet._kvKey}
+                              className="flex-shrink-0 flex items-center justify-center rounded-lg transition-all active:scale-90"
+                              style={{
+                                width: '30px', height: '30px',
+                                background: 'rgba(239,154,154,0.08)',
+                                border: '1px solid rgba(239,154,154,0.2)',
+                              }}
+                            >
+                              {deletingKey === bet._kvKey
+                                ? <motion.div animate={{ rotate: 360 }} transition={{ duration: 0.7, repeat: Infinity, ease: 'linear' }}>
+                                    <RefreshCw size={12} style={{ color: '#EF9A9A' }} />
+                                  </motion.div>
+                                : <Trash2 size={12} style={{ color: '#EF9A9A' }} />
+                              }
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
 
           {/* Back */}
           <button
