@@ -220,7 +220,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
   const apiFetch = useCallback(async (path: string, options?: RequestInit) => {
     // ── 1. Retrieve the current session token via getSession() ─────────────
     const { data: { session: currentSession } } = await supabase.auth.getSession();
-    const freshToken = currentSession?.access_token ?? publicAnonKey;
+    // Fall back to tokenRef (last known-good user token) rather than publicAnonKey
+    // so the request still succeeds when Supabase's autoRefreshToken fails transiently.
+    const freshToken = currentSession?.access_token ?? tokenRef.current;
 
     // Keep tokenRef in sync so the rest of the context (e.g. sign-out reset)
     // always reflects the live token.
