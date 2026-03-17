@@ -195,6 +195,54 @@ async function writeFuturesChampion(team: string): Promise<void> {
   await kv.set(KEY_FUTURES_CHAMPION, team.trim());
 }
 
+// ─── NCAA Tournament team filter ─────────────────────────────────────────────
+// Fetches team names currently in the NCAA Tournament bracket via ESPN's
+// groups=100 endpoint. Returns an empty set on failure (show all as fallback).
+
+async function fetchTournamentTeams(): Promise<Set<string>> {
+  const teams = new Set<string>();
+  try {
+    const now = new Date();
+    // Fetch today + next 7 days to capture full current round + next round
+    const fetches = Array.from({ length: 8 }, (_, i) => {
+      const d = new Date(now);
+      d.setDate(d.getDate() + i);
+      const dateStr = `${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}`;
+      return fetch(
+        `https://site.api.espn.com/apis/site/v2/sports/basketball/mens-college-basketball/scoreboard?groups=100&dates=${dateStr}&limit=50`
+      )
+        .then(r => r.ok ? r.json() : { events: [] })
+        .catch(() => ({ events: [] }));
+    });
+    const results = await Promise.all(fetches);
+    for (const data of results) {
+      for (const event of (data.events ?? [])) {
+        for (const comp of (event.competitions ?? [])) {
+          for (const c of (comp.competitors ?? [])) {
+            const dn: string | undefined = c.team?.displayName;
+            const sn: string | undefined = c.team?.shortDisplayName;
+            if (dn) teams.add(dn.toLowerCase());
+            if (sn) teams.add(sn.toLowerCase());
+          }
+        }
+      }
+    }
+    console.log(`Tournament teams fetched: ${teams.size}`);
+  } catch (e) {
+    console.log("fetchTournamentTeams error:", e);
+  }
+  return teams;
+}
+
+function isInTournament(teamName: string, tournamentTeams: Set<string>): boolean {
+  const normalized = teamName.toLowerCase();
+  if (tournamentTeams.has(normalized)) return true;
+  for (const t of tournamentTeams) {
+    if (normalized.includes(t) || t.includes(normalized)) return true;
+  }
+  return false;
+}
+
 // ─── ESPN results fetch ───────────────────────────────────────────────────────
 // Fetches completed NCAAB games from the free ESPN scoreboard API.
 // Checks today + last 2 days so games played the previous night are caught.
@@ -1280,7 +1328,16 @@ app.get(`${PREFIX}/ncaab-odds`, async (c) => {
     const raw: any[] = await res.json();
     if (!Array.isArray(raw) || raw.length === 0) return c.json([]);
 
-    const games = raw.map((event: any) => {
+    // Filter to only NCAA Tournament games (groups=100 via ESPN)
+    const tournamentTeams = await fetchTournamentTeams();
+    const tournamentOnly = tournamentTeams.size > 0
+      ? raw.filter((event: any) =>
+          isInTournament(event.home_team ?? '', tournamentTeams) &&
+          isInTournament(event.away_team ?? '', tournamentTeams)
+        )
+      : raw; // fallback: show all if ESPN returned nothing
+
+    const games = tournamentOnly.map((event: any) => {
       const bookmaker =
         event.bookmakers?.find((b: any) =>
           b.markets?.some((m: any) => m.key === "h2h" || m.key === "spreads")
@@ -1327,7 +1384,7 @@ app.get(`${PREFIX}/ncaab-odds`, async (c) => {
       };
     });
 
-    console.log(`ncaab-odds: ${games.length} games`);
+    console.log(`ncaab-odds: ${games.length} tournament games (from ${raw.length} total)`);
     return c.json(games);
   } catch (err) {
     console.log("Error in GET /ncaab-odds:", err);

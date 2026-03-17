@@ -211,7 +211,13 @@ export function SuperBowlHub() {
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto" style={{ background: '#111111' }}>
+        <div
+          className="flex-1 overflow-y-auto"
+          style={{
+            background: '#111111',
+            paddingBottom: (activeTab === 'games' && mode === 'parlay' && parlayLegs.length >= 2) || pendingCount > 0 ? '80px' : '0',
+          }}
+        >
           <AnimatePresence mode="wait">
 
             {/* ─── Games Tab ──────────────────────────────────────────────── */}
@@ -449,42 +455,6 @@ export function SuperBowlHub() {
                   </div>
                 )}
 
-                {/* Parlay CTA */}
-                {mode === 'parlay' && parlayLegs.length >= 2 && (
-                  <motion.div
-                    className="mt-6 mb-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <motion.div
-                      animate={{
-                        boxShadow: [
-                          '0 0 20px rgba(255,179,0,0.3)',
-                          '0 0 35px rgba(255,179,0,0.55)',
-                          '0 0 20px rgba(255,179,0,0.3)',
-                        ],
-                      }}
-                      transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-                    >
-                      <GlossButton onClick={() => setParlayOpen(true)}>
-                        Build Parlay ({parlayLegs.length} legs) 🏀
-                      </GlossButton>
-                    </motion.div>
-                  </motion.div>
-                )}
-
-                {/* Check Results CTA */}
-                {pendingCount > 0 && (
-                  <motion.div
-                    className="mt-6 mb-4"
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                  >
-                    <GlossButton to="/results" variant="ghost">
-                      Check Results ({pendingCount} pending) →
-                    </GlossButton>
-                  </motion.div>
-                )}
               </motion.div>
             )}
 
@@ -517,6 +487,51 @@ export function SuperBowlHub() {
           </AnimatePresence>
         </div>
       </div>
+
+      {/* Sticky footer CTAs */}
+      <AnimatePresence>
+        {activeTab === 'games' && mode === 'parlay' && parlayLegs.length >= 2 && (
+          <motion.div
+            key="parlay-cta"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="flex-shrink-0 px-5 pt-3 pb-5"
+            style={{ background: '#111111', borderTop: '1px solid rgba(255,213,79,0.12)' }}
+          >
+            <motion.div
+              animate={{
+                boxShadow: [
+                  '0 0 20px rgba(255,179,0,0.3)',
+                  '0 0 35px rgba(255,179,0,0.55)',
+                  '0 0 20px rgba(255,179,0,0.3)',
+                ],
+              }}
+              transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <GlossButton onClick={() => setParlayOpen(true)}>
+                Build Parlay ({parlayLegs.length} legs) 🏀
+              </GlossButton>
+            </motion.div>
+          </motion.div>
+        )}
+        {(activeTab !== 'games' || mode !== 'parlay' || parlayLegs.length < 2) && pendingCount > 0 && (
+          <motion.div
+            key="results-cta"
+            initial={{ y: 80, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: 80, opacity: 0 }}
+            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
+            className="flex-shrink-0 px-5 pt-3 pb-5"
+            style={{ background: '#111111', borderTop: '1px solid rgba(255,213,79,0.12)' }}
+          >
+            <GlossButton to="/results" variant="ghost">
+              Check Results ({pendingCount} pending) →
+            </GlossButton>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Single Bet Slip */}
       {selectedBet && (
