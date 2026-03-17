@@ -1411,11 +1411,14 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
     );
     url.searchParams.set("apiKey",     apiKey);
     url.searchParams.set("regions",    "us");
-    url.searchParams.set("markets",    "h2h");
+    url.searchParams.set("markets",    "outrights");
     url.searchParams.set("oddsFormat", "american");
 
     const res = await fetch(url.toString());
-    if (!res.ok) return c.json({ teams: [] });
+    if (!res.ok) {
+      console.log(`ncaab-futures API error: ${res.status} ${await res.text()}`);
+      return c.json({ teams: [] });
+    }
 
     const raw: any[] = await res.json();
     const teams: { name: string; odds: string }[] = [];
@@ -1423,9 +1426,9 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
 
     for (const event of raw) {
       const bm = event.bookmakers?.find((b: any) =>
-        b.markets?.some((m: any) => m.key === "h2h")
+        b.markets?.some((m: any) => m.key === "outrights")
       ) ?? event.bookmakers?.[0];
-      const market = bm?.markets?.find((m: any) => m.key === "h2h");
+      const market = bm?.markets?.find((m: any) => m.key === "outrights");
       for (const o of market?.outcomes ?? []) {
         if (seen.has(o.name)) continue;
         seen.add(o.name);

@@ -215,7 +215,7 @@ export function SuperBowlHub() {
           className="flex-1 overflow-y-auto"
           style={{
             background: '#111111',
-            paddingBottom: (activeTab === 'games' && mode === 'parlay' && parlayLegs.length >= 2) || pendingCount > 0 ? '80px' : '0',
+            paddingBottom: (activeTab === 'games' && mode === 'parlay' && parlayLegs.length >= 2) ? '80px' : '0',
           }}
         >
           <AnimatePresence mode="wait">
@@ -527,21 +527,6 @@ export function SuperBowlHub() {
                 Build Parlay ({parlayLegs.length} legs) 🏀
               </GlossButton>
             </motion.div>
-          </motion.div>
-        )}
-        {(activeTab !== 'games' || mode !== 'parlay' || parlayLegs.length < 2) && pendingCount > 0 && (
-          <motion.div
-            key="results-cta"
-            initial={{ y: 80, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            exit={{ y: 80, opacity: 0 }}
-            transition={{ type: 'spring', damping: 28, stiffness: 320 }}
-            className="flex-shrink-0 px-5 pt-3 pb-5"
-            style={{ background: '#111111', borderTop: '1px solid rgba(255,213,79,0.12)' }}
-          >
-            <GlossButton to="/results" variant="ghost">
-              Check Results ({pendingCount} pending) →
-            </GlossButton>
           </motion.div>
         )}
       </AnimatePresence>
