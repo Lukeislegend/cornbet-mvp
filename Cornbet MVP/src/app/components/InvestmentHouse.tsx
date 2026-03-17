@@ -29,7 +29,7 @@ export function InvestmentHouse() {
               MaizeBank
             </h1>
             <p style={{ color: 'rgba(255,213,79,0.55)', fontSize: '13px', marginTop: '4px' }}>
-              To be converted to Bitcoin for DraftHaus 2026
+              Final amount contributes to DraftHaus 2026
             </p>
           </div>
 
@@ -122,7 +122,7 @@ export function InvestmentHouse() {
             className="text-center mb-5"
             style={{ color: 'rgba(255,255,255,0.35)', fontSize: '13px', lineHeight: '1.6', fontStyle: 'italic' }}
           >
-            Losses convert to Bitcoin every Monday at market price.
+            Final balance funds DraftHaus 2026 at end of tournament.
           </p>
 
           {/* Back Button */}
