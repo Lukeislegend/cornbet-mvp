@@ -1453,6 +1453,8 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
           const mkt = bm?.markets?.find((m: any) => m.key === "outrights");
           for (const o of mkt?.outcomes ?? []) {
             if (seen.has(o.name)) continue;
+            // Skip if price is missing or clearly invalid (abs < 100 is not a real American odds value)
+            if (typeof o.price !== "number" || Math.abs(o.price) < 100) continue;
             seen.add(o.name);
             entries.push({ name: o.name, odds: formatAmerican(o.price), market });
           }
@@ -1505,9 +1507,14 @@ app.get(`${PREFIX}/ncaab-futures`, async (c) => {
             const col = parseInt(colStr);
             const cell = cells[col] ?? '';
             // Match American odds like +350, -150, +1200
-            const oddsMatch = cell.match(/([+\-]\d+)/);
+            // Require 3+ digits so we don't capture records like "1-1" as "-1"
+            const oddsMatch = cell.match(/([+\-]\d{3,})/);
             if (oddsMatch) {
-              results.push({ name: teamName, odds: oddsMatch[1], market });
+              const n = parseInt(oddsMatch[1]);
+              // Valid American odds have abs value >= 100
+              if (Math.abs(n) >= 100) {
+                results.push({ name: teamName, odds: oddsMatch[1], market });
+              }
             }
           }
         }
