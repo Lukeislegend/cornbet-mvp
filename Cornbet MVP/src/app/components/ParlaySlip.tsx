@@ -67,7 +67,7 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
             animate={{ y: 0 }}
             exit={{ y: '100%' }}
             transition={{ type: 'spring', damping: 30, stiffness: 300 }}
-            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl overflow-hidden"
+            className="fixed bottom-0 left-0 right-0 z-50 rounded-t-3xl flex flex-col"
             style={{
               background: '#1A1600',
               maxWidth: '393px',
@@ -75,10 +75,10 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
               border: '1px solid rgba(255,213,79,0.2)',
               borderBottom: 'none',
               maxHeight: '85vh',
-              overflowY: 'auto',
             }}
           >
-            <div className="p-6">
+            {/* Scrollable content */}
+            <div className="p-6 overflow-y-auto flex-1">
               {/* Handle */}
               <div className="flex justify-center mb-4">
                 <div style={{ width: '36px', height: '4px', borderRadius: '2px', background: 'rgba(255,213,79,0.2)' }} />
@@ -219,10 +219,13 @@ export function ParlaySlip({ isOpen, onClose, legs, onRemoveLeg }: ParlaySlipPro
               </AnimatePresence>
 
               {/* Group Bank note */}
-              <p className="mb-5" style={{ color: 'rgba(255,213,79,0.4)', fontSize: '12px', textAlign: 'center', fontStyle: 'italic' }}>
+              <p className="mb-2" style={{ color: 'rgba(255,213,79,0.4)', fontSize: '12px', textAlign: 'center', fontStyle: 'italic' }}>
                 All legs must win. A loss sends the wager to Group Bank 🌽
               </p>
+            </div>
 
+            {/* Sticky Place Bet button */}
+            <div className="px-6 pb-8 pt-3" style={{ borderTop: '1px solid rgba(255,213,79,0.1)', background: '#1A1600' }}>
               <div style={{ opacity: isDisabled ? 0.45 : 1, pointerEvents: isDisabled ? 'none' : 'auto' }}>
                 <GlossButton onClick={handlePlaceParlay}>
                   {placing ? 'Placing…' : `Place Parlay (${legs.length} legs)`}
